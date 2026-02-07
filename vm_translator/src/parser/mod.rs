@@ -14,4 +14,12 @@ impl Parser {
     pub fn parse(&mut self) -> Command {
         todo!()
     }
+
+    fn next_command() {
+        todo!()
+    }
+
+    fn is_at_end(&self) -> bool {
+        self.current >= self.lines.len()
+    }
 }
