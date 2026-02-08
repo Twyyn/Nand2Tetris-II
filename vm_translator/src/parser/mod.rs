@@ -1,26 +1,19 @@
 pub mod command;
-use command::{Command, Segment};
+pub mod errors;
+use command::Command;
+use errors::ParseError;
 
-pub struct Parser {
-    lines: Vec<String>,
-    current: usize,
-}
+#[derive(Debug)]
+pub struct Parser;
 
 impl Parser {
-    pub fn new(source: String) -> Self {
-        let lines: Vec<String> = source.lines().map(String::from).collect();
-        Self { lines, current: 0 }
-    }
-
-    pub fn parse(&mut self) -> Vec<Command> {
-        todo!()
-    }
-
-    fn next_command() {
-        todo!()
-    }
-
-    fn is_at_end(&self) -> bool {
-        self.current >= self.lines.len()
+    pub fn parse(source: &str) -> Result<Vec<Command>, (usize, ParseError)> {
+        source
+            .lines()
+            .enumerate()
+            .map(|(i, line)| (i + 1, line.split("//").next().unwrap_or("").trim()))
+            .filter(|(_, line)| !line.is_empty())
+            .map(|(line_num, line)| line.parse().map_err(|e| (line_num, e)))
+            .collect()
     }
 }
