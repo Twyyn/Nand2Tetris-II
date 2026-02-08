@@ -9,14 +9,16 @@ pub enum Memory<'a> {
 }
 
 impl Memory<'_> {
-    pub fn push_to_asum(&self) -> String {
-        let push_stack = "@SP\nA=M\nM=D\n@SP\nM=M+1";
-
+    pub fn push_to_asm(&self) -> String {
         match self {
             Self::Constant(index) => formatdoc! {"
                 @{index}
                 D=A
-                {push_stack}
+                @SP
+                A=M
+                M=D
+                @SP
+                M=M+1
             "},
             Self::Segment(seg, index) => formatdoc! {"
                 @{seg}
@@ -24,19 +26,31 @@ impl Memory<'_> {
                 @{index}
                 A=D+A
                 D=M
-                {push_stack}
+                @SP
+                A=M
+                M=D
+                @SP
+                M=M+1
             "},
             Self::Static(filename, index) => formatdoc! {"
                 @{filename}.{index}
                 D=M
-                {push_stack}
+                @SP
+                A=M
+                M=D
+                @SP
+                M=M+1
             "},
             Self::Pointer(index) => {
                 let addr = 3 + index;
                 formatdoc! {"
                     @R{addr}
                     D=M
-                    {push_stack}
+                    @SP
+                    A=M
+                    M=D
+                    @SP
+                    M=M+1
                 "}
             }
             Self::Temp(index) => {
@@ -44,37 +58,45 @@ impl Memory<'_> {
                 formatdoc! {"
                     @R{addr}
                     D=M
-                    {push_stack}
+                    @SP
+                    A=M
+                    M=D
+                    @SP
+                    M=M+1
                 "}
             }
         }
     }
 
     pub fn pop_to_asm(&self) -> String {
-        let pop_stack = "@SP\nAM=M-1\nD=M";
-
         match self {
-            Self::Segment(seg, index) => formatdoc! {"
-                @{seg}
+            Self::Segment(segment, index) => formatdoc! {"
+                @{segment}
                 D=M
                 @{index}
                 D=D+A
                 @R13
                 M=D
-                {pop_stack}
+                @SP
+                AM=M-1
+                D=M
                 @R13
                 A=M
                 M=D
             "},
             Self::Static(filename, index) => formatdoc! {"
-                {pop_stack}
+                @SP
+                AM=M-1
+                D=M
                 @{filename}.{index}
                 M=D
             "},
             Self::Pointer(index) => {
                 let addr = 3 + index;
                 formatdoc! {"
-                    {pop_stack}
+                    @SP
+                    AM=M-1
+                    D=M
                     @R{addr}
                     M=D
                 "}
@@ -82,12 +104,13 @@ impl Memory<'_> {
             Self::Temp(index) => {
                 let addr = 5 + index;
                 formatdoc! {"
-                    {pop_stack}
+                    @SP
+                    AM=M-1
+                    D=M
                     @R{addr}
                     M=D
                 "}
             }
-
             _ => unreachable!(),
         }
     }
