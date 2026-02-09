@@ -9,7 +9,6 @@ use std::{
 };
 
 #[derive(Debug)]
-#[allow(unused)]
 pub struct VMTranslator {
     filename: String,
     commands: Vec<Command>,
