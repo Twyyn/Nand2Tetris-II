@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub enum Memory<'a> {
     Constant(u16),
     Segment(&'a str, u16),
