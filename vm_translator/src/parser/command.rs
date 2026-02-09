@@ -56,6 +56,11 @@ impl fmt::Display for ParseError {
             Self::InvalidIndex(s) => write!(f, "Invalid index: {s}"),
             Self::CannotPopConstant => write!(f, "Cannot pop to constant segment"),
             Self::UnknownCommand(s) => write!(f, "Unknown command: {s}"),
+            Self::IndexOutOfRange {
+                segment,
+                index,
+                max,
+            } => write!(f, "Invalid index {index} for {segment} (expected 0–{max})"),
         }
     }
 }
@@ -90,6 +95,7 @@ impl FromStr for Command {
                 .parse::<ArithmeticCommand>()
                 .map(Command::Arithmetic)
                 .map_err(|_| ParseError::UnknownCommand(command.to_string())),
+
             _ => Err(ParseError::UnknownCommand(s.to_string())),
         }
     }

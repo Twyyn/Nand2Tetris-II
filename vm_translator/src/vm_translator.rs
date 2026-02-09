@@ -1,3 +1,4 @@
+use crate::codegen::CodeGen;
 use crate::parser::Parser;
 use crate::parser::command::Command;
 use std::fs;
@@ -24,5 +25,13 @@ impl VMTranslator {
             .map_err(|(line, e)| format!("Parse error at line {line}: {e}"))?;
 
         Ok(Self { filename, commands })
+    }
+
+    pub fn run(self) {
+        let mut codegen = CodeGen::new();
+
+        for command in self.commands {
+            println!("{}", codegen.translate(command, &self.filename));
+        }
     }
 }

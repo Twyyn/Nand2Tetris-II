@@ -4,8 +4,7 @@ pub enum Memory<'a> {
     Constant(u16),
     Segment(&'a str, u16),
     Static(&'a str, u16),
-    Pointer(u16),
-    Temp(u16),
+    Direct(u16), // Pointer & Temp
 }
 
 impl Memory<'_> {
@@ -21,7 +20,7 @@ impl Memory<'_> {
                 M=M+1
             "},
             Self::Segment(segment, index) => formatdoc! {"
-                @{seg}
+                @{segment}
                 D=M
                 @{index}
                 A=D+A
@@ -41,30 +40,15 @@ impl Memory<'_> {
                 @SP
                 M=M+1
             "},
-            Self::Pointer(index) => {
-                let addr = 3 + index;
-                formatdoc! {"
-                    @R{addr}
-                    D=M
-                    @SP
-                    A=M
-                    M=D
-                    @SP
-                    M=M+1
-                "}
-            }
-            Self::Temp(index) => {
-                let addr = 5 + index;
-                formatdoc! {"
-                    @R{addr}
-                    D=M
-                    @SP
-                    A=M
-                    M=D
-                    @SP
-                    M=M+1
-                "}
-            }
+            Self::Direct(addr) => formatdoc! {"
+                @R{addr}
+                D=M
+                @SP
+                A=M
+                M=D
+                @SP
+                M=M+1
+            "},
         }
     }
 
@@ -91,26 +75,13 @@ impl Memory<'_> {
                 @{filename}.{index}
                 M=D
             "},
-            Self::Pointer(index) => {
-                let addr = 3 + index;
-                formatdoc! {"
-                    @SP
-                    AM=M-1
-                    D=M
-                    @R{addr}
-                    M=D
-                "}
-            }
-            Self::Temp(index) => {
-                let addr = 5 + index;
-                formatdoc! {"
-                    @SP
-                    AM=M-1
-                    D=M
-                    @R{addr}
-                    M=D
-                "}
-            }
+            Self::Direct(addr) => formatdoc! {"
+                @SP
+                AM=M-1
+                D=M
+                @R{addr}
+                M=D
+            "},
             _ => unreachable!(),
         }
     }
