@@ -1,9 +1,12 @@
 use crate::codegen::CodeGen;
 use crate::parser::Parser;
 use crate::parser::command::Command;
-use std::fs;
-use std::io::{BufWriter, Write};
-use std::path::{Path, PathBuf};
+use std::{
+    ffi::OsStr,
+    fs,
+    io::{BufWriter, Write},
+    path::{Path, PathBuf},
+};
 
 #[derive(Debug)]
 #[allow(unused)]
@@ -15,19 +18,25 @@ pub struct VMTranslator {
 
 impl VMTranslator {
     pub fn new(filepath: &str) -> Result<Self, String> {
-        let filename = Path::new(filepath)
+        let filepath = Path::new(filepath);
+
+        if filepath.extension() != Some(OsStr::new("vm")) {
+            return Err("File must have a .vm extension".to_string());
+        }
+
+        let filename = filepath
             .file_stem()
             .and_then(|s| s.to_str())
             .ok_or("Invalid filename")?
             .to_string();
 
-        let source =
-            fs::read_to_string(filepath).map_err(|e| format!("Failed to read {filepath}: {e}"))?;
+        let source = fs::read_to_string(filepath)
+            .map_err(|e| format!("Failed to read {}: {e}", filepath.to_string_lossy()))?;
 
         let commands = Parser::parse(&source)
             .map_err(|(line, e)| format!("Parse error at line {line}: {e}"))?;
 
-        let output_path = Path::new(filepath).with_extension("asm");
+        let output_path = filepath.with_extension("asm");
 
         Ok(Self {
             filename,

@@ -1,5 +1,3 @@
-use indoc::formatdoc;
-
 pub enum Arithmetic {
     Add,
     Sub,
@@ -13,50 +11,50 @@ pub enum Arithmetic {
 }
 
 fn binary_op(op: &str) -> String {
-    formatdoc! {"
-        @SP
-        AM=M-1
-        D=M
-        A=A-1
-        M=M{op}D
-    "}
+    format!(
+        "@SP\n\
+         AM=M-1\n\
+         D=M\n\
+         A=A-1\n\
+         M=M{op}D\n"
+    )
 }
 
 fn unary_op(op: &str) -> String {
-    formatdoc! {"
-        @SP
-        A=M-1
-        M={op}M
-    "}
+    format!(
+        "@SP\n\
+         A=M-1\n\
+         M={op}M\n"
+    )
 }
 
 fn comparison_asm(prefix: &str, jump: &str, label_count: u16) -> String {
-    formatdoc! {"
-        @SP
-        AM=M-1
-        D=M
-        @SP
-        AM=M-1
-        D=M-D
-
-        @{prefix}_TRUE_{label_count}
-        D;{jump}
-
-        @SP
-        A=M
-        M=0
-        @{prefix}_END_{label_count}
-        0;JMP
-
-        ({prefix}_TRUE_{label_count})
-        @SP
-        A=M
-        M=-1
-
-        ({prefix}_END_{label_count})
-        @SP
-        M=M+1
-    "}
+    format!(
+        "@SP\n\
+         AM=M-1\n\
+         D=M\n\
+         @SP\n\
+         AM=M-1\n\
+         D=M-D\n\
+         \n\
+         @{prefix}_TRUE_{label_count}\n\
+         D;{jump}\n\
+         \n\
+         @SP\n\
+         A=M\n\
+         M=0\n\
+         @{prefix}_END_{label_count}\n\
+         0;JMP\n\
+         \n\
+         ({prefix}_TRUE_{label_count})\n\
+         @SP\n\
+         A=M\n\
+         M=-1\n\
+         \n\
+         ({prefix}_END_{label_count})\n\
+         @SP\n\
+         M=M+1\n"
+    )
 }
 
 impl Arithmetic {

@@ -1,5 +1,6 @@
 mod arithmetic;
 mod memory;
+
 use crate::{
     codegen::{arithmetic::Arithmetic, memory::Memory},
     parser::command::{ArithmeticCommand, Command, Segment},

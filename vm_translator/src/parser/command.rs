@@ -1,7 +1,8 @@
 use super::errors::ParseError;
-use std::fmt::{self};
-use std::str::FromStr;
-use strum::EnumString;
+use std::{
+    fmt::{self},
+    str::FromStr,
+};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Command {
@@ -10,8 +11,7 @@ pub enum Command {
     Arithmetic(ArithmeticCommand),
 }
 
-#[derive(Debug, Clone, Copy, EnumString, strum::Display, PartialEq, Eq)]
-#[strum(serialize_all = "lowercase")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ArithmeticCommand {
     Add,
     Sub,
@@ -24,8 +24,7 @@ pub enum ArithmeticCommand {
     Not,
 }
 
-#[derive(Debug, Clone, Copy, EnumString, strum::Display, PartialEq, Eq)]
-#[strum(serialize_all = "lowercase")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Segment {
     Constant,
     Local,
@@ -35,6 +34,74 @@ pub enum Segment {
     Static,
     Temp,
     Pointer,
+}
+
+impl fmt::Display for ArithmeticCommand {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Add => write!(f, "add"),
+            Self::Sub => write!(f, "sub"),
+            Self::Neg => write!(f, "neg"),
+            Self::Eq => write!(f, "eq"),
+            Self::Gt => write!(f, "gt"),
+            Self::Lt => write!(f, "lt"),
+            Self::And => write!(f, "and"),
+            Self::Or => write!(f, "or"),
+            Self::Not => write!(f, "not"),
+        }
+    }
+}
+
+impl FromStr for ArithmeticCommand {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "add" => Ok(Self::Add),
+            "sub" => Ok(Self::Sub),
+            "neg" => Ok(Self::Neg),
+            "eq" => Ok(Self::Eq),
+            "gt" => Ok(Self::Gt),
+            "lt" => Ok(Self::Lt),
+            "and" => Ok(Self::And),
+            "or" => Ok(Self::Or),
+            "not" => Ok(Self::Not),
+            _ => Err(()),
+        }
+    }
+}
+
+impl fmt::Display for Segment {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Constant => write!(f, "constant"),
+            Self::Local => write!(f, "local"),
+            Self::Argument => write!(f, "argument"),
+            Self::This => write!(f, "this"),
+            Self::That => write!(f, "that"),
+            Self::Static => write!(f, "static"),
+            Self::Temp => write!(f, "temp"),
+            Self::Pointer => write!(f, "pointer"),
+        }
+    }
+}
+
+impl FromStr for Segment {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "constant" => Ok(Self::Constant),
+            "local" => Ok(Self::Local),
+            "argument" => Ok(Self::Argument),
+            "this" => Ok(Self::This),
+            "that" => Ok(Self::That),
+            "static" => Ok(Self::Static),
+            "temp" => Ok(Self::Temp),
+            "pointer" => Ok(Self::Pointer),
+            _ => Err(()),
+        }
+    }
 }
 
 impl fmt::Display for Command {
