@@ -80,8 +80,25 @@ impl FromStr for Command {
                     .parse()
                     .map_err(|_| ParseError::InvalidIndex(index.to_string()))?;
 
-                if command == "pop" && segment == Segment::Constant {
-                    return Err(ParseError::CannotPopConstant);
+                match (command, segment) {
+                    ("pop", Segment::Constant) => {
+                        return Err(ParseError::CannotPopConstant);
+                    }
+                    (_, Segment::Pointer) if index > 1 => {
+                        return Err(ParseError::IndexOutOfRange {
+                            segment: segment.to_string(),
+                            index,
+                            max: 1,
+                        });
+                    }
+                    (_, Segment::Temp) if index > 7 => {
+                        return Err(ParseError::IndexOutOfRange {
+                            segment: segment.to_string(),
+                            index,
+                            max: 7,
+                        });
+                    }
+                    _ => {}
                 }
 
                 if command == "push" {
