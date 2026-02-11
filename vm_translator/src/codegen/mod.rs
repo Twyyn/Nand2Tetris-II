@@ -25,7 +25,7 @@ impl CodeGen {
             Command::Operation(operation) => self.operation(operation).to_asm(),
         };
 
-        format!("// {command}\n{asm}")
+        format!("// {command} //\n{asm}")
     }
 
     fn memory<'a>(segment: Segment, index: u16, filename: &'a str) -> Memory<'a> {

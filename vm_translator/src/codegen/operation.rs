@@ -13,48 +13,50 @@ pub enum Operation {
 
 fn binary_op(op: &str) -> String {
     format!(
-        "@SP\n\
-         AM=M-1\n\
-         D=M\n\
-         A=A-1\n\
-         M=M{op}D\n"
+        "\
+        @SP\n \
+        AM=M-1\n \
+        D=M\n \
+        A=A-1\n \
+        M=M{op}D\n\
+        "
     )
 }
 
 fn unary_op(op: &str) -> String {
     format!(
-        "@SP\n\
-         A=M-1\n\
-         M={op}M\n"
+        "\
+        @SP\n \
+        A=M-1\n \
+        M={op}M\n\
+        "
     )
 }
 
-fn comparison_asm(prefix: &str, jump: &str, label_count: u16) -> String {
+fn comparison_asm(prefix: &str, jump: &str, n: u16) -> String {
     format!(
-        "@SP\n\
-         AM=M-1\n\
-         D=M\n\
-         @SP\n\
-         AM=M-1\n\
-         D=M-D\n\
-         \n\
-         @{prefix}_TRUE_{label_count}\n\
-         D;{jump}\n\
-         \n\
-         @SP\n\
-         A=M\n\
-         M=0\n\
-         @{prefix}_END_{label_count}\n\
-         0;JMP\n\
-         \n\
-         ({prefix}_TRUE_{label_count})\n\
-         @SP\n\
-         A=M\n\
-         M=-1\n\
-         \n\
-         ({prefix}_END_{label_count})\n\
-         @SP\n\
-         M=M+1\n"
+        "\
+        @SP\n \
+        AM=M-1\n \
+        D=M\n\
+        @SP\n \
+        AM=M-1\n \
+        D=M-D\n\
+        @{prefix}_TRUE_{n}\n \
+        D;{jump}\n\
+        @SP\n \
+        A=M\n \
+        M=0\n\
+        @{prefix}_END_{n}\n \
+        0;JMP\n\
+        \t({prefix}_TRUE_{n})\n\
+        @SP\n \
+        A=M\n \
+        M=-1\n\
+        \t({prefix}_END_{n})\n\
+        @SP\n \
+        M=M+1\n\
+        "
     )
 }
 
@@ -67,9 +69,9 @@ impl Operation {
             Self::Or => binary_op("|"),
             Self::Neg => unary_op("-"),
             Self::Not => unary_op("!"),
-            Self::Eq(label) => comparison_asm("EQ", "JEQ", *label),
-            Self::Gt(label) => comparison_asm("GT", "JGT", *label),
-            Self::Lt(label) => comparison_asm("LT", "JLT", *label),
+            Self::Eq(n) => comparison_asm("EQ", "JEQ", *n),
+            Self::Gt(n) => comparison_asm("GT", "JGT", *n),
+            Self::Lt(n) => comparison_asm("LT", "JLT", *n),
         }
     }
 }
