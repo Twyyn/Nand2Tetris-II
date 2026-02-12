@@ -123,8 +123,12 @@ impl FromStr for Command {
         let mut tokens = s.split_whitespace();
 
         match (tokens.next(), tokens.next(), tokens.next()) {
-            /* Memory Commands */
+            // Stack Commands
             (Some(command @ ("push" | "pop")), Some(segment), Some(index)) => {
+                if tokens.next().is_some() {
+                    return Err(ParseError::UnknownCommand(s.to_string()));
+                }
+
                 let segment: Seg = segment
                     .parse()
                     .map_err(|()| ParseError::InvalidSegment(segment.to_string()))?;
@@ -158,7 +162,7 @@ impl FromStr for Command {
                     Ok(Command::Push { segment, index })
                 }
             }
-            /* Branch Commands */
+            // Branching Commands
             (Some("label"), Some(label), None) => Ok(Command::Branch(Br::Label {
                 label: label.to_string(),
             })),
@@ -169,9 +173,15 @@ impl FromStr for Command {
             (Some("if-goto"), Some(label), None) => Ok(Command::Branch(Br::IfGoto {
                 label: label.to_string(),
             })),
-
-            /* Function Commands */
+            (Some("label" | "goto" | "if-goto"), None, None) => {
+                Err(ParseError::MissingLabel(s.to_string()))
+            }
+            // Function Commands
             (Some("function"), Some(name), Some(n_vars)) => {
+                if tokens.next().is_some() {
+                    return Err(ParseError::UnknownCommand(s.to_string()));
+                }
+
                 let n_vars: u16 = n_vars
                     .parse()
                     .map_err(|_| ParseError::MissingVarCount(n_vars.to_string()))?;
@@ -182,6 +192,10 @@ impl FromStr for Command {
                 }))
             }
             (Some("call"), Some(function), Some(n_args)) => {
+                if tokens.next().is_some() {
+                    return Err(ParseError::UnknownCommand(s.to_string()));
+                }
+
                 let n_args: u16 = n_args
                     .parse()
                     .map_err(|_| ParseError::MissingArgCount(n_args.to_string()))?;
@@ -191,8 +205,8 @@ impl FromStr for Command {
                     n_args,
                 }))
             }
-
             (Some("return"), None, None) => Ok(Command::Function(Func::Return)),
+            // Arithmetic & Logical Commands
             (Some(command), None, None) => command
                 .parse::<Op>()
                 .map(Command::Operation)

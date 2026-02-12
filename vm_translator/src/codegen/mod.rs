@@ -15,7 +15,7 @@ impl CodeGen {
         Self { label_count: 0 }
     }
 
-    pub fn translate(&mut self, command: &Command, filename: &str) -> String {
+    pub fn translate(&mut self, command: Command, filename: &str) -> String {
         let asm = match command {
             Command::Push { segment, index } => push_to_asm(segment, index, filename),
             Command::Pop { segment, index } => pop_to_asm(segment, index, filename),

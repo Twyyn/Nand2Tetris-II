@@ -1,8 +1,6 @@
 mod codegen;
 pub mod error;
 mod parser;
-use parser::command::{Command, OP, Segment};
-
 use codegen::CodeGen;
 use error::VMError;
 use parser::{Parser, command::Command};
@@ -20,7 +18,6 @@ pub struct VMTranslator {
     output_path: PathBuf,
 }
 
-#[allow(clippy::missing_errors_doc)]
 impl VMTranslator {
     /// Creates a new `VMTranslator` from a `.vm` file path.
     ///
