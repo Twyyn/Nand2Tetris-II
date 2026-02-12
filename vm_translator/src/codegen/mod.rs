@@ -1,3 +1,4 @@
+mod functions;
 mod memory;
 mod operation;
 

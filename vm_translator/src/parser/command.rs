@@ -137,72 +137,67 @@ impl FromStr for Command {
                     .parse()
                     .map_err(|_| ParseError::InvalidIndex(index.to_string()))?;
 
-                if segment == Seg::Temp && index > 7 {
-                    return Err(ParseError::IndexOutOfRange {
-                        segment: segment.to_string(),
-                        index,
-                        max: 7,
-                    });
-                }
-
-                if segment == Seg::Pointer && index > 1 {
-                    return Err(ParseError::IndexOutOfRange {
-                        segment: segment.to_string(),
-                        index,
-                        max: 1,
-                    });
-                }
-
-                if command == "pop" {
-                    if segment == Seg::Constant {
-                        return Err(ParseError::CannotPopConstant);
+                match segment {
+                    Seg::Temp if index > 7 => {
+                        return Err(ParseError::IndexOutOfRange {
+                            segment: segment.to_string(),
+                            index,
+                            max: 7,
+                        });
                     }
-                    Ok(Command::Pop { segment, index })
-                } else {
-                    Ok(Command::Push { segment, index })
+                    Seg::Pointer if index > 1 => {
+                        return Err(ParseError::IndexOutOfRange {
+                            segment: segment.to_string(),
+                            index,
+                            max: 1,
+                        });
+                    }
+                    _ => {}
+                }
+
+                if command == "pop" && segment == Seg::Constant {
+                    return Err(ParseError::CannotPopConstant);
+                }
+
+                match command {
+                    "push" => Ok(Command::Push { segment, index }),
+                    "pop" => Ok(Command::Pop { segment, index }),
+
+                    _ => unreachable!(),
                 }
             }
             // Branching Commands
-            (Some("label"), Some(label), None) => Ok(Command::Branch(Br::Label {
-                label: label.to_string(),
-            })),
-            (Some("goto"), Some(label), None) => Ok(Command::Branch(Br::Goto {
-                label: label.to_string(),
-            })),
+            (Some(command @ ("label" | "goto" | "if-goto")), Some(label), None) => {
+                let label = label.to_string();
 
-            (Some("if-goto"), Some(label), None) => Ok(Command::Branch(Br::IfGoto {
-                label: label.to_string(),
-            })),
-            (Some("label" | "goto" | "if-goto"), None, None) => {
-                Err(ParseError::MissingLabel(s.to_string()))
-            }
-            // Function Commands
-            (Some("function"), Some(name), Some(n_vars)) => {
-                if tokens.next().is_some() {
-                    return Err(ParseError::UnknownCommand(s.to_string()));
-                }
+                Ok(Command::Branch(match command {
+                    "label" => Br::Label { label },
+                    "goto" => Br::Goto { label },
+                    "if-goto" => Br::IfGoto { label },
 
-                let n_vars: u16 = n_vars
-                    .parse()
-                    .map_err(|_| ParseError::MissingVarCount(n_vars.to_string()))?;
-
-                Ok(Command::Function(Func::Define {
-                    name: name.to_string(),
-                    n_vars,
+                    _ => unreachable!(),
                 }))
             }
-            (Some("call"), Some(function), Some(n_args)) => {
+            // Function Commands
+            (Some(command @ ("function" | "call")), Some(name), Some(n)) => {
                 if tokens.next().is_some() {
                     return Err(ParseError::UnknownCommand(s.to_string()));
                 }
 
-                let n_args: u16 = n_args
-                    .parse()
-                    .map_err(|_| ParseError::MissingArgCount(n_args.to_string()))?;
+                let name = name.to_string();
+                let n: u16 = n.parse().map_err(|_| match command {
+                    "function" => ParseError::MissingVarCount(n.to_string()),
+                    _ => ParseError::MissingArgCount(n.to_string()),
+                })?;
 
-                Ok(Command::Function(Func::Call {
-                    function: function.to_string(),
-                    n_args,
+                Ok(Command::Function(match command {
+                    "function" => Func::Define { name, n_vars: n },
+                    "call" => Func::Call {
+                        function: name,
+                        n_args: n,
+                    },
+
+                    _ => unreachable!(),
                 }))
             }
             (Some("return"), None, None) => Ok(Command::Function(Func::Return)),
