@@ -1,10 +1,9 @@
 mod memory;
 mod operation;
 
-use crate::{
-    codegen::{memory::Memory, operation::Operation},
-    parser::command::{Command, OP, Segment},
-};
+use crate::parser::command::{Command, OP, Segment};
+use memory::Memory;
+use operation::Operation;
 
 #[derive(Debug, Default)]
 pub struct CodeGen {
@@ -13,7 +12,7 @@ pub struct CodeGen {
 
 impl CodeGen {
     pub fn new() -> Self {
-        Self::default()
+        Self { label_count: 0 }
     }
 
     pub fn translate(&mut self, command: Command, filename: &str) -> String {
@@ -30,7 +29,7 @@ impl CodeGen {
         format!("// {command} //\n{asm}")
     }
 
-    fn memory<'a>(segment: Segment, index: u16, filename: &'a str) -> Memory<'a> {
+    fn memory(segment: Segment, index: u16, filename: &str) -> Memory<'_> {
         match segment {
             Segment::Constant => Memory::Constant(index),
             Segment::Local | Segment::Argument | Segment::This | Segment::That => {

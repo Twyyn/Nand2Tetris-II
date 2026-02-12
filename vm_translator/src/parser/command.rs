@@ -1,19 +1,20 @@
 use super::error::ParseError;
+
 use std::{
     fmt::{self},
     str::FromStr,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Command {
     Push { segment: Segment, index: u16 },
     Pop { segment: Segment, index: u16 },
     Operation { operation: OP },
     Branch { branch: BR },
-    Function { function: Fn },
+    Function { function: FN },
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OP {
     Add,
     Sub,
@@ -26,7 +27,7 @@ pub enum OP {
     Not,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Segment {
     Constant,
     Local,
@@ -38,16 +39,16 @@ pub enum Segment {
     Pointer,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BR {
     Label { label: String },
     Jump { label: String },
     JumpIf { label: String },
 }
 
-#[derive(Debug, Clone)]
-pub enum Fn {
-    Function { name: String, n_vars: u16 },
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FN {
+    Define { name: String, n_vars: u16 },
     Call { function: String, n_args: u16 },
     Return,
 }
@@ -64,9 +65,9 @@ impl fmt::Display for Command {
     }
 }
 
-impl fmt::Display for Segment {
+impl<'a> fmt::Display for Segment {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &self {
+        match self {
             Self::Constant => write!(f, "constant"),
             Self::Local => write!(f, "local"),
             Self::Argument => write!(f, "argument"),
@@ -79,7 +80,7 @@ impl fmt::Display for Segment {
     }
 }
 
-impl fmt::Display for OP {
+impl<'a> fmt::Display for OP {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self {
             Self::Add => write!(f, "add"),
@@ -97,20 +98,20 @@ impl fmt::Display for OP {
 
 impl fmt::Display for BR {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &self {
+        match self {
             Self::Label { label } => write!(f, "label {label}"),
-            Self::Jump { label } => write!(f, " goto {label}"),
+            Self::Jump { label } => write!(f, "goto {label}"),
             Self::JumpIf { label } => write!(f, "if-goto {label}"),
         }
     }
 }
 
-impl fmt::Display for Fn {
+impl fmt::Display for FN {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &self {
-            Fn::Function { name, n_vars } => write!(f, "Function {name} {n_vars}"),
-            Fn::Call { function, n_args } => write!(f, "Call {function}, {n_args}"),
-            Fn::Return => write!(f, "return"),
+        match self {
+            Self::Define { name, n_vars } => write!(f, "function {name} {n_vars}"),
+            Self::Call { function, n_args } => write!(f, "call {function} {n_args}"),
+            Self::Return => write!(f, "return"),
         }
     }
 }
@@ -122,10 +123,11 @@ impl FromStr for Command {
         let mut tokens = s.split_whitespace();
 
         match (tokens.next(), tokens.next(), tokens.next()) {
+            /* Memory Commands */
             (Some(command @ ("push" | "pop")), Some(segment), Some(index)) => {
                 let segment: Segment = segment
                     .parse()
-                    .map_err(|_| ParseError::InvalidSegment(segment.to_string()))?;
+                    .map_err(|()| ParseError::InvalidSegment(segment.to_string()))?;
                 let index: u16 = index
                     .parse()
                     .map_err(|_| ParseError::InvalidIndex(index.to_string()))?;
@@ -157,31 +159,52 @@ impl FromStr for Command {
                     Ok(Command::Pop { segment, index })
                 }
             }
+            /* Branch Commands */
+            (Some("label"), Some(label), None) => Ok(Command::Branch {
+                branch: BR::Label {
+                    label: label.to_string(),
+                },
+            }),
+            (Some("goto"), Some(label), None) => Ok(Command::Branch {
+                branch: BR::Jump {
+                    label: label.to_string(),
+                },
+            }),
 
+            (Some("if-goto"), Some(label), None) => Ok(Command::Branch {
+                branch: BR::JumpIf {
+                    label: label.to_string(),
+                },
+            }),
+            /* Function Commands */
             (Some("Function"), Some(name), Some(n_vars)) => {
                 let n_vars: u16 = n_vars
                     .parse()
                     .map_err(|_| ParseError::MissingVarCount(n_vars.to_string()))?;
-                let name = name.to_string();
 
                 Ok(Command::Function {
-                    function: Fn::Function { name, n_vars },
+                    function: FN::Define {
+                        name: name.to_string(),
+                        n_vars,
+                    },
                 })
             }
             (Some("Call"), Some(function), Some(n_args)) => {
                 let n_args: u16 = n_args
                     .parse()
                     .map_err(|_| ParseError::MissingArgCount(n_args.to_string()))?;
-                let function = function.to_string();
 
                 Ok(Command::Function {
-                    function: Fn::Call { function, n_args },
+                    function: FN::Call {
+                        function: function.to_string(),
+                        n_args,
+                    },
                 })
             }
-            (Some("return"), None, None) => Ok(Command::Function {
-                function: Fn::Return,
-            }),
 
+            (Some("return"), None, None) => Ok(Command::Function {
+                function: FN::Return,
+            }),
             (Some(command), None, None) => command
                 .parse::<OP>()
                 .map(|operation| Command::Operation { operation })
@@ -225,26 +248,6 @@ impl FromStr for OP {
             "and" => Ok(Self::And),
             "or" => Ok(Self::Or),
             "not" => Ok(Self::Not),
-
-            _ => Err(()),
-        }
-    }
-}
-
-impl FromStr for BR {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "label" => Ok(Self::Label {
-                label: String::new(),
-            }),
-            "goto" => Ok(Self::Jump {
-                label: String::new(),
-            }),
-            "if-goto" => Ok(Self::JumpIf {
-                label: String::new(),
-            }),
 
             _ => Err(()),
         }

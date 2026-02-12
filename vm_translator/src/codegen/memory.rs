@@ -20,7 +20,7 @@ const POP_TO_D: &str = "\
     D=M\n\
     ";
 
-impl Memory<'_> {
+impl<'a> Memory<'a> {
     pub fn push_to_asm(&self) -> String {
         match self {
             Self::Constant(index) => format!(

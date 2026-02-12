@@ -12,7 +12,6 @@ pub enum ParseError {
     },
     UnknownCommand(String),
     MissingLabel(String),
-    MissingFnName(String),
     MissingVarCount(String),
     MissingArgCount(String),
 }
@@ -33,7 +32,6 @@ impl fmt::Display for ParseError {
             } => write!(f, "Invalid index {index} for {segment} (expected 0–{max})"),
 
             Self::MissingLabel(_) => todo!(),
-            Self::MissingFnName(_) => todo!(),
             Self::MissingVarCount(_) => todo!(),
             Self::MissingArgCount(_) => todo!(),
         }
