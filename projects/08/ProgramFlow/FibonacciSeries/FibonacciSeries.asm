@@ -130,7 +130,7 @@ D;JNE
 
 // goto END
 @END
-A=M
+0;JMP
 
 // label COMPUTE_ELEMENT
 (COMPUTE_ELEMENT)
@@ -256,7 +256,7 @@ M=D
 
 // goto LOOP
 @LOOP
-A=M
+0;JMP
 
 // label END
 (END)

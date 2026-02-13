@@ -1,4 +1,5 @@
 pub mod command;
+
 use crate::error::VMError;
 use command::Command;
 

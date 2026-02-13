@@ -1,19 +1,19 @@
-use crate::parser::command::Br;
+use crate::parser::command::BranchCommand;
 
-pub fn branch_to_asm(instruction: &Br) -> String {
-    match instruction {
-        Br::Label { label } => {
+pub fn compile_branch(command: BranchCommand) -> String {
+    match command {
+        BranchCommand::Label { label } => {
             format!("({label})\n")
         }
-        Br::Goto { label } => {
+        BranchCommand::Goto { label } => {
             format!(
                 "\
                 @{label}\n\
-                A=M\n\
+                0;JMP\n\
                 "
             )
         }
-        Br::IfGoto { label } => {
+        BranchCommand::IfGoto { label } => {
             format!(
                 "\
                 @SP\n\

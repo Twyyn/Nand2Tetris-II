@@ -1,23 +1,23 @@
-use crate::parser::command::Op;
+use crate::parser::command::OperationCommand;
 
-fn binary_op(op: &str) -> String {
+fn binary_op(operation: &str) -> String {
     format!(
         "\
         @SP\n\
         AM=M-1\n\
         D=M\n\
         A=A-1\n\
-        M=M{op}D\n\
+        M=M{operation}D\n\
         "
     )
 }
 
-fn unary_op(op: &str) -> String {
+fn unary_op(operation: &str) -> String {
     format!(
         "\
         @SP\n\
         A=M-1\n\
-        M={op}M\n\
+        M={operation}M\n\
         "
     )
 }
@@ -49,16 +49,16 @@ fn comparison_asm(prefix: &str, jump: &str, n: u16) -> String {
     )
 }
 
-pub fn op_to_asm(op: Op, label: u16) -> String {
-    match op {
-        Op::Add => binary_op("+"),
-        Op::Sub => binary_op("-"),
-        Op::And => binary_op("&"),
-        Op::Or => binary_op("|"),
-        Op::Neg => unary_op("-"),
-        Op::Not => unary_op("!"),
-        Op::Eq => comparison_asm("EQ", "JEQ", label),
-        Op::Gt => comparison_asm("GT", "JGT", label),
-        Op::Lt => comparison_asm("LT", "JLT", label),
+pub fn compile_op(operation_command: OperationCommand, label: u16) -> String {
+    match operation_command {
+        OperationCommand::Add => binary_op("+"),
+        OperationCommand::Sub => binary_op("-"),
+        OperationCommand::And => binary_op("&"),
+        OperationCommand::Or => binary_op("|"),
+        OperationCommand::Neg => unary_op("-"),
+        OperationCommand::Not => unary_op("!"),
+        OperationCommand::Eq => comparison_asm("EQ", "JEQ", label),
+        OperationCommand::Gt => comparison_asm("GT", "JGT", label),
+        OperationCommand::Lt => comparison_asm("LT", "JLT", label),
     }
 }

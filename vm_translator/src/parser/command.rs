@@ -7,15 +7,15 @@ use std::{
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Command {
-    Push { segment: Seg, index: u16 },
-    Pop { segment: Seg, index: u16 },
-    Operation(Op),
-    Branch(Br),
-    Function(Func),
+    Push { segment: Segment, index: u16 },
+    Pop { segment: Segment, index: u16 },
+    Operation(OperationCommand),
+    Branch(BranchCommand),
+    Function(FunctionCommand),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Seg {
+pub enum Segment {
     Constant,
     Local,
     Argument,
@@ -27,7 +27,7 @@ pub enum Seg {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Op {
+pub enum OperationCommand {
     Add,
     Sub,
     Neg,
@@ -40,16 +40,16 @@ pub enum Op {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Br {
+pub enum BranchCommand {
     Label { label: String },
     Goto { label: String },
     IfGoto { label: String },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Func {
-    Define { name: String, n_vars: u16 },
-    Call { function: String, n_args: u16 },
+pub enum FunctionCommand {
+    Function { name: String, local_count: u16 },
+    Call { name: String, arg_count: u16 },
     Return,
 }
 
@@ -58,14 +58,14 @@ impl fmt::Display for Command {
         match self {
             Self::Push { segment, index } => write!(f, "push {segment} {index}"),
             Self::Pop { segment, index } => write!(f, "pop {segment} {index}"),
-            Self::Operation(operation) => write!(f, "{operation}"),
-            Self::Branch(branch) => write!(f, "{branch}"),
-            Self::Function(function) => write!(f, "{function}"),
+            Self::Operation(operation_command) => write!(f, "{operation_command}"),
+            Self::Branch(branch_command) => write!(f, "{branch_command}"),
+            Self::Function(function_command) => write!(f, "{function_command}"),
         }
     }
 }
 
-impl fmt::Display for Seg {
+impl fmt::Display for Segment {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Constant => write!(f, "constant"),
@@ -80,7 +80,7 @@ impl fmt::Display for Seg {
     }
 }
 
-impl fmt::Display for Op {
+impl fmt::Display for OperationCommand {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Add => write!(f, "add"),
@@ -96,7 +96,7 @@ impl fmt::Display for Op {
     }
 }
 
-impl fmt::Display for Br {
+impl fmt::Display for BranchCommand {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Label { label } => write!(f, "label {label}"),
@@ -106,11 +106,11 @@ impl fmt::Display for Br {
     }
 }
 
-impl fmt::Display for Func {
+impl fmt::Display for FunctionCommand {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Define { name, n_vars } => write!(f, "function {name} {n_vars}"),
-            Self::Call { function, n_args } => write!(f, "call {function} {n_args}"),
+            Self::Function { name, local_count } => write!(f, "function {name} {local_count}"),
+            Self::Call { name, arg_count } => write!(f, "call {name} {arg_count}"),
             Self::Return => write!(f, "return"),
         }
     }
@@ -129,7 +129,7 @@ impl FromStr for Command {
                     return Err(ParseError::UnknownCommand(s.to_string()));
                 }
 
-                let segment: Seg = segment
+                let segment: Segment = segment
                     .parse()
                     .map_err(|()| ParseError::InvalidSegment(segment.to_string()))?;
 
@@ -138,14 +138,14 @@ impl FromStr for Command {
                     .map_err(|_| ParseError::InvalidIndex(index.to_string()))?;
 
                 match segment {
-                    Seg::Temp if index > 7 => {
+                    Segment::Temp if index > 7 => {
                         return Err(ParseError::IndexOutOfRange {
                             segment: segment.to_string(),
                             index,
                             max: 7,
                         });
                     }
-                    Seg::Pointer if index > 1 => {
+                    Segment::Pointer if index > 1 => {
                         return Err(ParseError::IndexOutOfRange {
                             segment: segment.to_string(),
                             index,
@@ -155,7 +155,7 @@ impl FromStr for Command {
                     _ => {}
                 }
 
-                if command == "pop" && segment == Seg::Constant {
+                if command == "pop" && segment == Segment::Constant {
                     return Err(ParseError::CannotPopConstant);
                 }
 
@@ -171,9 +171,9 @@ impl FromStr for Command {
                 let label = label.to_string();
 
                 Ok(Command::Branch(match command {
-                    "label" => Br::Label { label },
-                    "goto" => Br::Goto { label },
-                    "if-goto" => Br::IfGoto { label },
+                    "label" => BranchCommand::Label { label },
+                    "goto" => BranchCommand::Goto { label },
+                    "if-goto" => BranchCommand::IfGoto { label },
 
                     _ => unreachable!(),
                 }))
@@ -186,24 +186,24 @@ impl FromStr for Command {
 
                 let name = name.to_string();
                 let n: u16 = n.parse().map_err(|_| match command {
-                    "function" => ParseError::MissingVarCount(n.to_string()),
-                    _ => ParseError::MissingArgCount(n.to_string()),
+                    "function" => ParseError::InvalidVarCount(n.to_string()),
+                    _ => ParseError::InvalidAarCount(n.to_string()),
                 })?;
 
                 Ok(Command::Function(match command {
-                    "function" => Func::Define { name, n_vars: n },
-                    "call" => Func::Call {
-                        function: name,
-                        n_args: n,
+                    "function" => FunctionCommand::Function {
+                        name,
+                        local_count: n,
                     },
+                    "call" => FunctionCommand::Call { name, arg_count: n },
 
                     _ => unreachable!(),
                 }))
             }
-            (Some("return"), None, None) => Ok(Command::Function(Func::Return)),
+            (Some("return"), None, None) => Ok(Command::Function(FunctionCommand::Return)),
             // Arithmetic & Logical Commands
             (Some(command), None, None) => command
-                .parse::<Op>()
+                .parse::<OperationCommand>()
                 .map(Command::Operation)
                 .map_err(|()| ParseError::UnknownCommand(command.to_string())),
 
@@ -212,7 +212,7 @@ impl FromStr for Command {
     }
 }
 
-impl FromStr for Seg {
+impl FromStr for Segment {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -231,7 +231,7 @@ impl FromStr for Seg {
     }
 }
 
-impl FromStr for Op {
+impl FromStr for OperationCommand {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {

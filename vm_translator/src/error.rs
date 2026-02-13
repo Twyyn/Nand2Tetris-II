@@ -11,9 +11,8 @@ pub enum ParseError {
         max: u16,
     },
     UnknownCommand(String),
-    MissingLabel(String),
-    MissingVarCount(String),
-    MissingArgCount(String),
+    InvalidVarCount(String),
+    InvalidAarCount(String),
 }
 
 #[derive(Debug)]
@@ -37,9 +36,8 @@ impl fmt::Display for ParseError {
             } => {
                 write!(f, "Invalid index {index} for {segment} (expected 0–{max})")
             }
-            Self::MissingLabel(s) => write!(f, "Missing label: {s}"),
-            Self::MissingVarCount(s) => write!(f, "Invalid variable count: {s}"),
-            Self::MissingArgCount(s) => write!(f, "Invalid argument count: {s}"),
+            Self::InvalidVarCount(s) => write!(f, "Invalid variable count: {s}"),
+            Self::InvalidAarCount(s) => write!(f, "Invalid argument count: {s}"),
         }
     }
 }

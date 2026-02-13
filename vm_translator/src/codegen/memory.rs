@@ -1,6 +1,6 @@
-use crate::parser::command::Seg;
+use crate::parser::command::Segment;
 
-const PUSH_D: &str = "\
+const PUSH_D_TO_STACK: &str = "\
     @SP\n\
     A=M\n\
     M=D\n\
@@ -8,35 +8,35 @@ const PUSH_D: &str = "\
     M=M+1\n\
     ";
 
-const POP_TO_D: &str = "\
+const POP_STACK_TO_D: &str = "\
     @SP\n\
     AM=M-1\n\
     D=M\n\
     ";
 
-fn base_pointer(segment: Seg) -> &'static str {
+fn segment_base_label(segment: Segment) -> &'static str {
     match segment {
-        Seg::Local => "LCL",
-        Seg::Argument => "ARG",
-        Seg::This => "THIS",
-        Seg::That => "THAT",
+        Segment::Local => "LCL",
+        Segment::Argument => "ARG",
+        Segment::This => "THIS",
+        Segment::That => "THAT",
         _ => unreachable!(),
     }
 }
 
-pub fn push_to_asm(segment: Seg, index: u16, filename: &str) -> String {
+pub fn compile_push(segment: Segment, index: u16, filename: &str) -> String {
     match segment {
-        Seg::Constant => {
+        Segment::Constant => {
             format!(
                 "\
                 @{index}\n\
                 D=A\n\
-                {PUSH_D}\
+                {PUSH_D_TO_STACK}\
                 "
             )
         }
-        Seg::Local | Seg::Argument | Seg::This | Seg::That => {
-            let segment = base_pointer(segment);
+        Segment::Local | Segment::Argument | Segment::This | Segment::That => {
+            let segment = segment_base_label(segment);
             format!(
                 "\
                 @{segment}\n\
@@ -44,44 +44,44 @@ pub fn push_to_asm(segment: Seg, index: u16, filename: &str) -> String {
                 @{index}\n\
                 A=D+A\n\
                 D=M\n\
-                {PUSH_D}\
+                {PUSH_D_TO_STACK}\
                 "
             )
         }
 
-        Seg::Static => {
+        Segment::Static => {
             format!(
                 "\
                 @{filename}.{index}\n\
                 D=M\n\
-                {PUSH_D}\
+                {PUSH_D_TO_STACK}\
                 "
             )
         }
 
-        Seg::Temp | Seg::Pointer => {
-            let base = match segment {
-                Seg::Temp => 5,
-                Seg::Pointer => 3,
+        Segment::Temp | Segment::Pointer => {
+            let base_addr = match segment {
+                Segment::Temp => 5,
+                Segment::Pointer => 3,
                 _ => unreachable!(),
             };
-            let addr = base + index;
+            let addr = base_addr + index;
             format!(
                 "\
                 @R{addr}\n\
                 D=M\n\
-                {PUSH_D}\
+                {PUSH_D_TO_STACK}\
                 "
             )
         }
     }
 }
 
-pub fn pop_to_asm(segment: Seg, index: u16, filename: &str) -> String {
+pub fn compile_pop(segment: Segment, index: u16, filename: &str) -> String {
     match segment {
-        Seg::Constant => unreachable!(),
-        Seg::Local | Seg::Argument | Seg::This | Seg::That => {
-            let segment = base_pointer(segment);
+        Segment::Constant => unreachable!(),
+        Segment::Local | Segment::Argument | Segment::This | Segment::That => {
+            let segment = segment_base_label(segment);
             format!(
                 "\
                 @{segment}\n\
@@ -90,32 +90,32 @@ pub fn pop_to_asm(segment: Seg, index: u16, filename: &str) -> String {
                 D=D+A\n\
                 @R13\n\
                 M=D\n\
-                {POP_TO_D}\
+                {POP_STACK_TO_D}\
                 @R13\n\
                 A=M\n\
                 M=D\n\
                 "
             )
         }
-        Seg::Static => {
+        Segment::Static => {
             format!(
                 "\
-                {POP_TO_D}\
+                {POP_STACK_TO_D}\
                  @{filename}.{index}\n\
                  M=D\n\
                  "
             )
         }
-        Seg::Temp | Seg::Pointer => {
-            let base = match segment {
-                Seg::Temp => 5,
-                Seg::Pointer => 3,
+        Segment::Temp | Segment::Pointer => {
+            let base_addr = match segment {
+                Segment::Temp => 5,
+                Segment::Pointer => 3,
                 _ => unreachable!(),
             };
-            let addr = base + index;
+            let addr = base_addr + index;
             format!(
                 "\
-                {POP_TO_D}\
+                {POP_STACK_TO_D}\
                 @R{addr}\n\
                 M=D\n\
                 "
