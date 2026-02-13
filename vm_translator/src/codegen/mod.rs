@@ -1,10 +1,10 @@
-mod functions;
+mod branch;
 mod memory;
-mod operation;
+mod operations;
 
 use crate::parser::command::{Command, Op};
 use memory::{pop_to_asm, push_to_asm};
-use operation::op_to_asm;
+use operations::op_to_asm;
 
 #[derive(Debug, Default)]
 pub struct CodeGen {
@@ -24,8 +24,8 @@ impl CodeGen {
                 let label = self.next_label(op);
                 op_to_asm(op, label)
             }
-            Command::Branch(br) => todo!(),
-            Command::Function(func) => todo!(),
+            Command::Branch(_br) => todo!(),
+            Command::Function(_func) => todo!(),
         };
         format!("// {command}\n{asm}")
     }
