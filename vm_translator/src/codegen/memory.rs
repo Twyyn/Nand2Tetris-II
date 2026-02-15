@@ -14,7 +14,6 @@ const POP_STACK_TO_D: &str = "\
     D=M\n\
     ";
 
-
 fn segment_base_label(segment: Segment) -> &'static str {
     match segment {
         Segment::Local => "LCL",
@@ -25,9 +24,12 @@ fn segment_base_label(segment: Segment) -> &'static str {
     }
 }
 
-pub fn compile_push(segment: Segment, index: u16, filename: &str) -> String {
+pub fn translate_push(segment: Segment, index: u16, filename: &str) -> String {
     match segment {
         Segment::Constant => {
+            if index == 0 {
+                return format!("@{segment}\nA=M\nD=M\n{PUSH_D_TO_STACK}");
+            }
             format!(
                 "\
                 @{index}\n\
@@ -37,17 +39,24 @@ pub fn compile_push(segment: Segment, index: u16, filename: &str) -> String {
             )
         }
         Segment::Local | Segment::Argument | Segment::This | Segment::That => {
-            let segment = segment_base_label(segment);
-            format!(
-                "\
-                @{segment}\n\
-                D=M\n\
-                @{index}\n\
-                A=D+A\n\
-                D=M\n\
-                {PUSH_D_TO_STACK}\
-                "
-            )
+            let base = segment_base_label(segment);
+            if index == 0 {
+                format!(
+                    "@{base}\n\
+                     A=M\n\
+                     D=M\n\
+                     {PUSH_D_TO_STACK}"
+                )
+            } else {
+                format!(
+                    "@{base}\n\
+                     D=M\n\
+                     @{index}\n\
+                     A=D+A\n\
+                     D=M\n\
+                     {PUSH_D_TO_STACK}"
+                )
+            }
         }
 
         Segment::Static => {
@@ -59,44 +68,55 @@ pub fn compile_push(segment: Segment, index: u16, filename: &str) -> String {
                 "
             )
         }
-
-        Segment::Temp | Segment::Pointer => {
-            let base_addr = match segment {
-                Segment::Temp => 5,
-                Segment::Pointer => 3,
+        Segment::Pointer => {
+            let label = match index {
+                0 => "THIS",
+                1 => "THAT",
                 _ => unreachable!(),
             };
-            let addr = base_addr + index;
             format!(
-                "\
-                @R{addr}\n\
-                D=M\n\
-                {PUSH_D_TO_STACK}\
-                "
+                "@{label}\n\
+                 D=M\n\
+                 {PUSH_D_TO_STACK}"
+            )
+        }
+        Segment::Temp => {
+            let addr = 5 + index;
+            format!(
+                "@R{addr}\n\
+                 D=M\n\
+                 {PUSH_D_TO_STACK}"
             )
         }
     }
 }
 
-pub fn compile_pop(segment: Segment, index: u16, filename: &str) -> String {
+pub fn translate_pop(segment: Segment, index: u16, filename: &str) -> String {
     match segment {
         Segment::Constant => unreachable!(),
         Segment::Local | Segment::Argument | Segment::This | Segment::That => {
-            let segment = segment_base_label(segment);
-            format!(
-                "\
-                @{segment}\n\
-                D=M\n\
-                @{index}\n\
-                D=D+A\n\
-                @R13\n\
-                M=D\n\
-                {POP_STACK_TO_D}\
-                @R13\n\
-                A=M\n\
-                M=D\n\
-                "
-            )
+            let base = segment_base_label(segment);
+            if index == 0 {
+                format!(
+                    "{POP_STACK_TO_D}\
+                     @{base}\n\
+                     A=M\n\
+                     M=D\n"
+                )
+            } else {
+                format!(
+                    "@{base}\n\
+                     D=M\n\
+                     @{index}\n\
+                     D=D+A\n\
+                     @R13\n\
+                     M=D\n\
+                     {POP_STACK_TO_D}\
+                     @R13\n\
+                     A=M\n\
+                     M=D\n"
+                )
+            }
         }
         Segment::Static => {
             format!(
@@ -107,19 +127,24 @@ pub fn compile_pop(segment: Segment, index: u16, filename: &str) -> String {
                  "
             )
         }
-        Segment::Temp | Segment::Pointer => {
-            let base_addr = match segment {
-                Segment::Temp => 5,
-                Segment::Pointer => 3,
+        Segment::Pointer => {
+            let label = match index {
+                0 => "THIS",
+                1 => "THAT",
                 _ => unreachable!(),
             };
-            let addr = base_addr + index;
             format!(
-                "\
-                {POP_STACK_TO_D}\
-                @R{addr}\n\
-                M=D\n\
-                "
+                "{POP_STACK_TO_D}\
+                 @{label}\n\
+                 M=D\n"
+            )
+        }
+        Segment::Temp => {
+            let addr = 5 + index;
+            format!(
+                "{POP_STACK_TO_D}\
+                 @R{addr}\n\
+                 M=D\n"
             )
         }
     }

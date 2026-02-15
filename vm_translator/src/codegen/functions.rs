@@ -1,19 +1,12 @@
-use crate::parser::command::FunctionCommand;
+use crate::parser::command::Function;
 
-pub fn compile_function(
-    function_command: FunctionCommand,
-    filename: &str,
-    label_count: u16,
-) -> String {
-    match function_command {
-        FunctionCommand::Function {
-            function_name,
-            local_count,
-        } => {
-            let mut asm = format!("({filename}.{function_name})\n");
+pub fn translate_function(function: Function, filename: &str, label_count: u16) -> String {
+    match function {
+        Function::Declare { name, var_count } => {
+            let mut asm = format!("({filename}.{name})\n");
 
-            if local_count <= 8 {
-                for _ in 0..local_count {
+            if var_count <= 8 {
+                for _ in 0..var_count {
                     asm.push_str(
                         "@SP\n\
                                 A=M\n\
@@ -24,7 +17,7 @@ pub fn compile_function(
                 }
             } else {
                 asm.push_str(&format!(
-                    "@{local_count}\n\
+                    "@{var_count}\n\
                      D=A\n\
                      @R13\n\
                      M=D\n\
@@ -48,13 +41,10 @@ pub fn compile_function(
             asm
         }
 
-        FunctionCommand::Call {
-            function_name,
-            arg_count,
-        } => {
+        Function::Call { name, arg_count } => {
             format!(
-                "// call {function_name} {arg_count}\n\
-                 @{filename}.{function_name}$ret.{label_count}\n\
+                "// call {name} {arg_count}\n\
+                 @{filename}.{name}$ret.{label_count}\n\
                  D=A\n\
                  @SP\n\
                  A=M\n\
@@ -107,14 +97,14 @@ pub fn compile_function(
                  D=M\n\
                  @LCL\n\
                  M=D\n\
-                 @{filename}.{function_name}\n\
+                 @{filename}.{name}\n\
                  0;JMP\n\
-                 ({filename}.{function_name}$ret.{label_count})\n\
+                 ({filename}.{name}$ret.{label_count})\n\
                  "
             )
         }
 
-        FunctionCommand::Return => {
+        Function::Return => {
             format!(
                 "// return\n\
                 @LCL\n\

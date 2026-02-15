@@ -5,14 +5,18 @@ pub enum ParseError {
     CannotPopConstant,
     InvalidSegment(String),
     InvalidIndex(String),
+    InvalidVarCount(String),
+    InvalidArgCount(String),
+    InvalidLabel(String),
+    UnknownCommand(String),
+    InvalidConstant {
+        value: u16,
+    },
     IndexOutOfRange {
         segment: String,
         index: u16,
         max: u16,
     },
-    UnknownCommand(String),
-    InvalidVarCount(String),
-    InvalidAarCount(String),
 }
 
 #[derive(Debug)]
@@ -25,10 +29,18 @@ pub enum VMError {
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::CannotPopConstant => write!(f, "Cannot pop to constant segment"),
             Self::InvalidSegment(s) => write!(f, "Invalid segment: {s}"),
             Self::InvalidIndex(s) => write!(f, "Invalid index: {s}"),
-            Self::CannotPopConstant => write!(f, "Cannot pop to constant segment"),
-            Self::UnknownCommand(s) => write!(f, "Unknown command: {s}"),
+            Self::InvalidLabel(s) => write!(f, "Invalid label {s}"),
+            Self::InvalidVarCount(s) => write!(f, "Invalid variable count: {s}"),
+            Self::InvalidArgCount(s) => write!(f, "Invalid argument count: {s}"),
+            Self::UnknownCommand(s) => {
+                write!(f, "Unknown command: {s}",)
+            }
+            Self::InvalidConstant { value } => {
+                write!(f, "Constant {value} exceeds 15-bit max (32767)")
+            }
             Self::IndexOutOfRange {
                 segment,
                 index,
@@ -36,8 +48,6 @@ impl fmt::Display for ParseError {
             } => {
                 write!(f, "Invalid index {index} for {segment} (expected 0–{max})")
             }
-            Self::InvalidVarCount(s) => write!(f, "Invalid variable count: {s}"),
-            Self::InvalidAarCount(s) => write!(f, "Invalid argument count: {s}"),
         }
     }
 }

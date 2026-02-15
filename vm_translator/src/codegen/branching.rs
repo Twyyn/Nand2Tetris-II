@@ -1,27 +1,23 @@
-use crate::parser::command::BranchCommand;
+use crate::parser::command::Branch;
 
-pub fn compile_branch(command: BranchCommand) -> String {
+pub fn translate_branch(command: Branch, current_function: &str) -> String {
     match command {
-        BranchCommand::Label { label } => {
-            format!("({label})\n")
+        Branch::Label { label } => {
+            format!("({current_function}${label})\n")
         }
-        BranchCommand::Goto { label } => {
+        Branch::Goto { label } => {
             format!(
-                "\
-                @{label}\n\
-                0;JMP\n\
-                "
+                "@{current_function}${label}\n\
+                 0;JMP\n"
             )
         }
-        BranchCommand::IfGoto { label } => {
+        Branch::IfGoto { label } => {
             format!(
-                "\
-                @SP\n\
-                AM=M-1\n\
-                D=M\n\
-                @{label}\n\
-                D;JNE\n\
-                "
+                "@SP\n\
+                 AM=M-1\n\
+                 D=M\n\
+                 @{current_function}${label}\n\
+                 D;JNE\n"
             )
         }
     }

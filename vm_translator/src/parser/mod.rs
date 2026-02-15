@@ -3,6 +3,7 @@ pub mod command;
 use crate::error::VMError;
 use command::Command;
 
+
 #[derive(Debug)]
 pub struct Parser;
 
