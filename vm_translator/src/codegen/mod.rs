@@ -2,7 +2,7 @@ mod bootstrap;
 mod branching;
 mod functions;
 mod memory;
-mod operations;
+mod arithmetic;
 
 use crate::parser::command::Function;
 use crate::{
@@ -12,7 +12,7 @@ use crate::{
 use bootstrap::bootstrap;
 use branching::translate_branch;
 pub use memory::{translate_pop, translate_push};
-use operations::translate_arithmetic;
+use arithmetic::translate_arithmetic;
 
 pub struct Bootstrap {}
 
