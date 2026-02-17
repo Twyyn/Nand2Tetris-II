@@ -1,14 +1,28 @@
 use crate::parser::command::Operation;
+use std::io::{self, Write};
 
-fn binary_op(operation: &str) -> String {
-    format!("@SP\nAM=M-1\nD=M\nA=A-1\nM=M{operation}D\n")
+fn binary_op(writer: &mut impl Write, operation: &str) -> io::Result<()> {
+    // Replaced format! with write! and return the Result
+    write!(
+        writer,
+        "@SP\n\
+         AM=M-1\n\
+         D=M\n\
+         A=A-1\n\
+         M=M{operation}D\n"
+    )
 }
 
-fn unary_op(operation: &str) -> String {
-    format!("@SP\nA=M-1\nM={operation}M\n")
+fn unary_op(writer: &mut impl Write, operation: &str) -> io::Result<()> {
+    write!(
+        writer,
+        "@SP\n\
+         A=M-1\n\
+         M={operation}M\n"
+    )
 }
 
-fn comparison_asm(prefix: &str, jump: &str, n: u16) -> String {
+fn comparison_asm(writer: &mut impl Write, prefix: &str, jump: &str, n: u16) -> io::Result<()> {
     let (x, y) = match jump {
         "JGT" => ("-1", "0"),
         "JLT" => ("0", "-1"),
@@ -16,7 +30,8 @@ fn comparison_asm(prefix: &str, jump: &str, n: u16) -> String {
         _ => unreachable!(),
     };
 
-    format!(
+    write!(
+        writer,
         "@SP\n\
          AM=M-1\n\
          D=M\n\
@@ -74,16 +89,22 @@ fn comparison_asm(prefix: &str, jump: &str, n: u16) -> String {
     )
 }
 
-pub fn translate_arithmetic(operation: Operation, label: u16) -> String {
+pub fn translate_arithmetic(
+    writer: &mut impl Write,
+    operation: Operation,
+    label: u16,
+) -> io::Result<()> {
+    // Now, every match arm cleanly passes the writer down and implicitly
+    // returns the io::Result<()> from the helper function!
     match operation {
-        Operation::Add => binary_op("+"),
-        Operation::Sub => binary_op("-"),
-        Operation::And => binary_op("&"),
-        Operation::Or => binary_op("|"),
-        Operation::Neg => unary_op("-"),
-        Operation::Not => unary_op("!"),
-        Operation::Eq => comparison_asm("EQ", "JEQ", label),
-        Operation::Gt => comparison_asm("GT", "JGT", label),
-        Operation::Lt => comparison_asm("LT", "JLT", label),
+        Operation::Add => binary_op(writer, "+"),
+        Operation::Sub => binary_op(writer, "-"),
+        Operation::And => binary_op(writer, "&"),
+        Operation::Or => binary_op(writer, "|"),
+        Operation::Neg => unary_op(writer, "-"),
+        Operation::Not => unary_op(writer, "!"),
+        Operation::Eq => comparison_asm(writer, "EQ", "JEQ", label),
+        Operation::Gt => comparison_asm(writer, "GT", "JGT", label),
+        Operation::Lt => comparison_asm(writer, "LT", "JLT", label),
     }
 }

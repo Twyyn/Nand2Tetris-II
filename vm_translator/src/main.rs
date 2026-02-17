@@ -4,6 +4,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .ok_or("Usage: vm_translator <file.vm | directory>")?;
 
     vm_translator::VMTranslator::new(&input_path)?.translate()?;
-    //println!("{:?}", vm_translator::VMTranslator::new(&input_path)?);
     Ok(())
 }

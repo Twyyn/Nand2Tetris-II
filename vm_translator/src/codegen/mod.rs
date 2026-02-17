@@ -3,11 +3,13 @@ mod branching;
 mod functions;
 mod memory;
 
+use crate::Write;
 use crate::parser::command::Function;
 use crate::{codegen::functions::translate_function, parser::command::Command};
 use arithmetic::translate_arithmetic;
 use branching::translate_branch;
 use memory::{translate_pop, translate_push};
+use std::io::Result;
 
 #[derive(Debug, Default)]
 pub struct CodeGen {
@@ -20,43 +22,51 @@ impl CodeGen {
         Self::default()
     }
 
-    pub fn translate(&mut self, command: Command, filename: &str) -> String {
+    pub fn translate<W: Write>(
+        &mut self,
+        writer: &mut impl Write,
+        command: Command,
+        filename: &str,
+    ) -> Result<()> {
         match command {
-            Command::Push { segment, index } => translate_push(segment, index, filename),
-            Command::Pop { segment, index } => translate_pop(segment, index, filename),
+            Command::Push { segment, index } => {
+                translate_push(writer, segment, index, filename)
+            }
+            Command::Pop { segment, index } => {
+                translate_pop(writer, segment, index, filename)
+            }
             Command::Arithmetic(operation) => {
                 let label = self.next_label();
-                translate_arithmetic(operation, label)
+                translate_arithmetic(writer, operation, label)
             }
             Command::Branching(branch) => {
-                translate_branch(branch, self.current_function.as_deref().unwrap_or(""))
+                    translate_branch(writer, branch, self.current_function.as_deref().unwrap_or("GLOBAL"))
             }
             Command::Function(function) => {
                 if let Function::Declare { ref name, .. } = function {
                     self.current_function = Some(name.clone());
                 }
                 let label = self.next_label();
-                translate_function(function, label)
+                translate_function(writer, function, label)
             }
         }
     }
 
-    pub fn emit_bootstrap(&mut self) -> String {
+    pub fn emit_bootstrap(&mut self, writer: &mut impl Write) -> Result<()> {
         let label = self.next_label();
-        let call_sys_init = translate_function(
+        write!(writer,
+            "// Bootstrap\n\
+             @256\n\
+             D=A\n\
+             @SP\n\
+             M=D\n"
+        )?;
+        translate_function(writer,
             Function::Call {
                 name: "Sys.init".to_string(),
                 arg_count: 0,
             },
             label,
-        );
-        format!(
-            "// Bootstrap\n\
-             @256\n\
-             D=A\n\
-             @SP\n\
-             M=D\n\
-             {call_sys_init}"
         )
     }
 

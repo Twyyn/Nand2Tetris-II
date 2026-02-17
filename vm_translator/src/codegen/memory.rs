@@ -1,3 +1,5 @@
+use crate::Write;
+use crate::codegen::Result;
 use crate::parser::command::Segment;
 
 const PUSH_D: &str = "\
@@ -32,35 +34,46 @@ fn direct_address(segment: Segment, index: u16, filename: &str) -> String {
     }
 }
 
-pub fn translate_push(segment: Segment, index: u16, filename: &str) -> String {
+pub fn translate_push(
+    writer: &mut impl Write,
+    segment: Segment,
+    index: u16,
+    filename: &str,
+) -> Result<()> {
     match segment {
         Segment::Constant => {
-            format!("@{index}\nD=A\n{PUSH_D}")
+            write!(writer, "@{index}\nD=A\n{PUSH_D}")
         }
         Segment::Local | Segment::Argument | Segment::This | Segment::That => {
             let base = base_label(segment);
             if index == 0 {
-                format!("@{base}\nA=M\nD=M\n{PUSH_D}")
+                write!(writer, "@{index}\nD=A\n{PUSH_D}")
             } else {
-                format!("@{base}\nD=M\n@{index}\nA=D+A\nD=M\n{PUSH_D}")
+                write!(writer, "@{base}\nD=M\n@{index}\nA=D+A\nD=M\n{PUSH_D}")
             }
         }
         Segment::Static | Segment::Pointer | Segment::Temp => {
             let addr = direct_address(segment, index, filename);
-            format!("@{addr}\nD=M\n{PUSH_D}")
+            write!(writer, "@{addr}\nD=M\n{PUSH_D}")
         }
     }
 }
 
-pub fn translate_pop(segment: Segment, index: u16, filename: &str) -> String {
+pub fn translate_pop(
+    writer: &mut impl Write,
+    segment: Segment,
+    index: u16,
+    filename: &str,
+) -> Result<()> {
     match segment {
         Segment::Constant => unreachable!(),
         Segment::Local | Segment::Argument | Segment::This | Segment::That => {
             let base = base_label(segment);
             if index == 0 {
-                format!("{POP_D}@{base}\nA=M\nM=D\n")
+                write!(writer, "{POP_D}@{base}\nA=M\nM=D\n")
             } else {
-                format!(
+                write!(
+                    writer,
                     "@{base}\nD=M\n@{index}\nD=D+A\n@R13\nM=D\n\
                      {POP_D}@R13\nA=M\nM=D\n"
                 )
@@ -68,7 +81,7 @@ pub fn translate_pop(segment: Segment, index: u16, filename: &str) -> String {
         }
         Segment::Static | Segment::Pointer | Segment::Temp => {
             let addr = direct_address(segment, index, filename);
-            format!("{POP_D}@{addr}\nM=D\n")
+            write!(writer, "{POP_D}@{addr}\nM=D\n")
         }
     }
 }

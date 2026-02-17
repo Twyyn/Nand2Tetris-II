@@ -121,15 +121,16 @@ impl VMTranslator {
         let mut writer = BufWriter::new(file);
 
         if self.needs_bootstrap {
-            write!(writer, "{}", codegen.emit_bootstrap())?;
+            // Pass the mutable reference to the writer
+            codegen.emit_bootstrap(&mut writer)?;
         }
 
         for source_file in self.source_files {
             let name = source_file.name;
             writeln!(writer, "// Filename: {name}.vm")?;
             for command in source_file.commands {
-                let asm = codegen.translate(command, &name);
-                write!(writer, "{asm}")?;
+                // Now writes directly to the buffer, zero allocations!
+                codegen.translate::<BufWriter<fs::File>>(&mut writer, command, &name)?;
             }
         }
         writer.flush()?;

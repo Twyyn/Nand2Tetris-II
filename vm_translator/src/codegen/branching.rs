@@ -1,18 +1,26 @@
+use crate::Write;
+use crate::codegen::Result;
 use crate::parser::command::Branch;
 
-pub fn translate_branch(command: Branch, current_function: &str) -> String {
+pub fn translate_branch(
+    writer: &mut impl Write,
+    command: Branch,
+    current_function: &str,
+) -> Result<()> {
     match command {
         Branch::Label { label } => {
-            format!("({current_function}${label})\n")
+            write!(writer, "({current_function}${label})\n")
         }
         Branch::Goto { label } => {
-            format!(
+            write!(
+                writer,
                 "@{current_function}${label}\n\
                  0;JMP\n"
             )
         }
         Branch::IfGoto { label } => {
-            format!(
+            write!(
+                writer,
                 "@SP\n\
                  AM=M-1\n\
                  D=M\n\

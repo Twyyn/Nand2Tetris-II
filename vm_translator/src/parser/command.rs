@@ -9,8 +9,8 @@ fn is_valid_label(s: &str) -> bool {
     let mut chars = s.chars();
     chars
         .next()
-        .is_some_and(|c| c.is_ascii_alphabetic() || matches!(c, '_' | '.' | ':'))
-        && chars.all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | ':'))
+        .is_some_and(|c| c.is_ascii_alphabetic() || matches!(c, '_' | '.' | ':' | '$'))
+        && chars.all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | ':' | '$'))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -148,6 +148,9 @@ impl FromStr for Command {
                     .map_err(|_| ParseError::InvalidIndex(index.to_string()))?;
 
                 match segment {
+                    Segment::Constant if index > 32767 => {
+                        return Err(ParseError::InvalidConstant { value: index });
+                    }
                     Segment::Temp if index > 7 => {
                         return Err(ParseError::IndexOutOfRange {
                             segment: segment.to_string(),
