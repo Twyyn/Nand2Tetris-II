@@ -1,4 +1,5 @@
-use crate::parser::command::Operation;
+use crate::{codegen::UniqueLabel, parser::command::Operation};
+
 
 fn binary_op(operation: &str) -> String {
     format!(

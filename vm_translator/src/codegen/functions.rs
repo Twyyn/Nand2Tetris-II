@@ -1,6 +1,52 @@
+use crate::codegen::UniqueLabel;
 use crate::parser::command::Function;
 
-pub fn translate_function(function: Function, label_count: u16) -> String {
+const RETURN_ASM: &str = "\
+    // return\n\
+    @LCL\n\
+    D=M\n\
+    @R13\n\
+    M=D\n\
+    @5\n\
+    A=D-A\n\
+    D=M\n\
+    @R14\n\
+    M=D\n\
+    @SP\n\
+    AM=M-1\n\
+    D=M\n\
+    @ARG\n\
+    A=M\n\
+    M=D\n\
+    @ARG\n\
+    D=M+1\n\
+    @SP\n\
+    M=D\n\
+    @R13\n\
+    AM=M-1\n\
+    D=M\n\
+    @THAT\n\
+    M=D\n\
+    @R13\n\
+    AM=M-1\n\
+    D=M\n\
+    @THIS\n\
+    M=D\n\
+    @R13\n\
+    AM=M-1\n\
+    D=M\n\
+    @ARG\n\
+    M=D\n\
+    @R13\n\
+    AM=M-1\n\
+    D=M\n\
+    @LCL\n\
+    M=D\n\
+    @R14\n\
+    A=M\n\
+    0;JMP\n";
+
+pub fn translate_function(function: Function, label: UniqueLabel) -> String {
     match function {
         Function::Declare { name, var_count } => {
             let mut asm = format!("({name})\n");
@@ -21,10 +67,10 @@ pub fn translate_function(function: Function, label_count: u16) -> String {
                      D=A\n\
                      @R13\n\
                      M=D\n\
-                     (INIT_LOCALS_{label_count})\n\
+                     (INIT_LOCALS_{label:?})\n\
                      @R13\n\
                      D=M\n\
-                     @END_INIT_{label_count}\n\
+                     @END_INIT_{label:?}\n\
                      D;JEQ\n\
                      @SP\n\
                      A=M\n\
@@ -33,18 +79,20 @@ pub fn translate_function(function: Function, label_count: u16) -> String {
                      M=M+1\n\
                      @R13\n\
                      M=M-1\n\
-                     @INIT_LOCALS_{label_count}\n\
+                     @INIT_LOCALS_{label:?}\n\
                      0;JMP\n\
-                     (END_INIT_{label_count})\n"
+                     (END_INIT_{label:?})\n"
                 ));
             }
             asm
         }
 
         Function::Call { name, arg_count } => {
+            let return_label = label.return_label(&name);
+
             format!(
                 "// call {name} {arg_count}\n\
-                 @{name}$ret.{label_count}\n\
+                 @{return_label}\n\
                  D=A\n\
                  @SP\n\
                  A=M\n\
@@ -97,61 +145,13 @@ pub fn translate_function(function: Function, label_count: u16) -> String {
                  D=M\n\
                  @LCL\n\
                  M=D\n\
-                 @{name}$ret.{label_count}\n\
+                 @{name}\n\
                  0;JMP\n\
-                 ({name}$ret.{label_count}$ret.{label_count})\n\
+                 ({return_label})\n\
                  "
             )
         }
 
-        Function::Return => {
-            format!(
-                "// return\n\
-                @LCL\n\
-                D=M\n\
-                @R13\n\
-                M=D\n\
-                @5\n\
-                A=D-A\n\
-                D=M\n\
-                @R14\n\
-                M=D\n\
-                @SP\n\
-                AM=M-1\n\
-                D=M\n\
-                @ARG\n\
-                A=M\n\
-                M=D\n\
-                @ARG\n\
-                D=M+1\n\
-                @SP\n\
-                M=D\n\
-                @R13\n\
-                AM=M-1\n\
-                D=M\n\
-                @THAT\n\
-                M=D\n\
-                @R13\n\
-                AM=M-1\n\
-                D=M\n\
-                @THIS\n\
-                M=D\n\
-                 // ARG = *(frame - 3)\n\
-                 @R13\n\
-                 AM=M-1\n\
-                 D=M\n\
-                 @ARG\n\
-                 M=D\n\
-                 @R13\n\
-                 AM=M-1\n\
-                 D=M\n\
-                 @LCL\n\
-                 M=D\n\
-                 @R14\n\
-                 A=M\n\
-                 0;JMP\n\
-                 "
-            )
-        }
+        Function::Return => RETURN_ASM.to_string(),
     }
 }

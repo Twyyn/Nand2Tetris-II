@@ -2,9 +2,10 @@ mod codegen;
 pub mod error;
 mod parser;
 
+use crate::codegen::UniqueLabel;
 use codegen::CodeGen;
 use error::VMError;
-use parser::{Parser, command::Command};
+use parser::{command::Command, parse};
 use std::fs;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
@@ -88,7 +89,7 @@ impl VMTranslator {
         for file in &vm_files {
             let source = fs::read_to_string(file)?;
             let name = extract_name(file)?;
-            let commands = Parser::parse(&source)?;
+            let commands = parse(&source)?;
             source_files.push(SourceFile { name, commands });
         }
 
@@ -104,7 +105,7 @@ impl VMTranslator {
     ///
     /// Returns an `VMError` if writing to the output file fails.
     pub fn run(self) -> Result<(), VMError> {
-        let mut codegen = CodeGen::new();
+        let mut codegen = CodeGen::default();
 
         let file = fs::File::create(&self.output_path)?;
         let mut writer = BufWriter::new(file);
@@ -113,7 +114,7 @@ impl VMTranslator {
             let name = source_file.name;
             writeln!(writer, "// Filename: {name}.asm")?;
             for command in source_file.commands {
-                let asm = codegen.translate(command, &name);
+                let asm = codegen.translate(command, &name, &mut label_gen);
                 writeln!(writer, "{asm}")?;
             }
         }

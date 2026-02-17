@@ -27,15 +27,10 @@ fn segment_base_label(segment: Segment) -> &'static str {
 pub fn translate_push(segment: Segment, index: u16, filename: &str) -> String {
     match segment {
         Segment::Constant => {
-            if index == 0 {
-                return format!("@{segment}\nA=M\nD=M\n{PUSH_D_TO_STACK}");
-            }
             format!(
-                "\
-                @{index}\n\
+                "@{index}\n\
                 D=A\n\
-                {PUSH_D_TO_STACK}\
-                "
+                {PUSH_D_TO_STACK}"
             )
         }
         Segment::Local | Segment::Argument | Segment::This | Segment::That => {
