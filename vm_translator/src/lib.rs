@@ -65,8 +65,15 @@ impl VMTranslator {
         let (vm_files, output_path) = match input_path {
             _ if input_path.is_dir() => {
                 let vm_files = get_vm_files(input_path)?;
+
+                if vm_files
+                    .iter()
+                    .any(|f| f.file_name().is_some_and(|n| n == "Sys.vm"))
+                {
+                    needs_bootstrap = true;
+                }
+
                 let output_path = output_path_from_dir(input_path)?;
-                needs_bootstrap = true;
 
                 (vm_files, output_path)
             }
