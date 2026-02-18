@@ -24,12 +24,22 @@ fn base_label(segment: Segment) -> &'static str {
     }
 }
 
-/// Resolves a direct-mapped segment to its assembly address symbol.
-fn direct_address(segment: Segment, index: u16, filename: &str) -> String {
+fn direct_address(
+    writer: &mut impl Write,
+    segment: Segment,
+    index: u16,
+    filename: &str,
+) -> Result<()> {
     match segment {
-        Segment::Static => format!("{filename}.{index}"),
-        Segment::Pointer => (if index == 0 { "THIS" } else { "THAT" }).to_string(),
-        Segment::Temp => format!("R{}", 5 + index),
+        Segment::Static => write!(writer, "{filename}.{index}"),
+        Segment::Pointer => {
+            if index == 0 {
+                write!(writer, "THIS")
+            } else {
+                write!(writer, "THAT")
+            }
+        }
+        Segment::Temp => write!(writer, "{}", 5 + index),
         _ => unreachable!(),
     }
 }
@@ -46,15 +56,12 @@ pub fn translate_push(
         }
         Segment::Local | Segment::Argument | Segment::This | Segment::That => {
             let base = base_label(segment);
-            if index == 0 {
-                write!(writer, "@{index}\nD=A\n{PUSH_D}")
-            } else {
-                write!(writer, "@{base}\nD=M\n@{index}\nA=D+A\nD=M\n{PUSH_D}")
-            }
+            write!(writer, "@{base}\nD=M\n@{index}\nA=D+A\nD=M\n{PUSH_D}")
         }
         Segment::Static | Segment::Pointer | Segment::Temp => {
-            let addr = direct_address(segment, index, filename);
-            write!(writer, "@{addr}\nD=M\n{PUSH_D}")
+            write!(writer, "@")?;
+            direct_address(writer, segment, index, filename)?;
+            write!(writer, "\nD=M\n{PUSH_D}")
         }
     }
 }
@@ -69,19 +76,16 @@ pub fn translate_pop(
         Segment::Constant => unreachable!(),
         Segment::Local | Segment::Argument | Segment::This | Segment::That => {
             let base = base_label(segment);
-            if index == 0 {
-                write!(writer, "{POP_D}@{base}\nA=M\nM=D\n")
-            } else {
-                write!(
-                    writer,
-                    "@{base}\nD=M\n@{index}\nD=D+A\n@R13\nM=D\n\
-                     {POP_D}@R13\nA=M\nM=D\n"
-                )
-            }
+            write!(
+                writer,
+                "@{base}\nD=M\n@{index}\nD=D+A\n@R13\nM=D\n\
+                 {POP_D}@R13\nA=M\nM=D\n"
+            )
         }
         Segment::Static | Segment::Pointer | Segment::Temp => {
-            let addr = direct_address(segment, index, filename);
-            write!(writer, "{POP_D}@{addr}\nM=D\n")
+            write!(writer, "{POP_D}@")?;
+            direct_address(writer, segment, index, filename)?;
+            write!(writer, "\nM=D\n")
         }
     }
 }
