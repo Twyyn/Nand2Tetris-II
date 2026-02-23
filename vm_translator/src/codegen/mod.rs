@@ -2,7 +2,6 @@ mod arithmetic;
 mod branching;
 mod functions;
 mod memory;
-
 use crate::Write;
 use crate::parser::command::Function;
 use crate::{codegen::functions::translate_function, parser::command::Command};
