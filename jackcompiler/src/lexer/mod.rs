@@ -27,6 +27,11 @@ impl Lexer {
         }
     }
 
+    /// Scans the source and produces a slice of tokens.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err(LexError)` if a lexical error is encountered while scanning.
     pub fn scan(&mut self) -> Result<&[Token], LexError> {
         while !self.is_at_end() {
             self.start = self.current;
