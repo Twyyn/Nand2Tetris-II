@@ -1,7 +1,7 @@
-mod token;
+pub mod token;
 
 use crate::{
-    error::{LexError, LexErrorKind},
+    error::{LexError, LexErrorType},
     lexer::token::{Keyword, Symbol, Token, TokenType},
 };
 use std::str::FromStr;
@@ -16,6 +16,7 @@ pub struct Lexer {
 }
 
 impl Lexer {
+    #[must_use]
     pub fn new(source: &str) -> Self {
         let source = source.chars().collect();
         Self {
@@ -49,26 +50,25 @@ impl Lexer {
             '\n' => self.line += 1,
 
             // Comments
-            '/' if self.peek() == '/' => {
-                while self.peek() != '\n' && !self.is_at_end() {
-                    self.advance();
-                }
-            }
-            '/' if self.peek() == '*' => {
-                self.advance();
-                loop {
-                    if self.is_at_end() {
-                        break;
-                    }
-                    if self.peek() == '\n' {
-                        self.line += 1;
-                    }
-                    if self.peek() == '*' && self.peek_next() == '/' {
+            '/' => {
+                if self.match_char('/') {
+                    while self.peek() != '\n' && !self.is_at_end() {
                         self.advance();
-                        self.advance();
-                        break;
                     }
-                    self.advance();
+                } else if self.match_char('*') {
+                    while !self.is_at_end() {
+                        if self.peek() == '\n' {
+                            self.line += 1;
+                        }
+                        if self.peek() == '*' && self.peek_next() == '/' {
+                            self.advance();
+                            self.advance();
+                            break;
+                        }
+                        self.advance();
+                    }
+                } else {
+                    self.add_token(TokenType::Symbol(Symbol::Slash));
                 }
             }
 
@@ -83,12 +83,12 @@ impl Lexer {
 
             // Symbols
             _ => {
-                let s = c.to_string();
-                match Symbol::from_str(&s) {
+                let symbol = c.to_string();
+                match Symbol::from_str(&symbol) {
                     Ok(symbol) => self.add_token(TokenType::Symbol(symbol)),
                     Err(()) => {
                         return Err(LexError {
-                            kind: LexErrorKind::UnexpectedChar(c),
+                            kind: LexErrorType::UnexpectedChar(c),
                             line: self.line,
                         });
                     }
@@ -99,9 +99,9 @@ impl Lexer {
         Ok(())
     }
 
-    fn add_token(&mut self, kind: TokenType) {
+    fn add_token(&mut self, token_type: TokenType) {
         let token = Token {
-            kind,
+            token_type,
             lexeme: self.lexeme(),
             line: self.line,
         };
@@ -114,12 +114,16 @@ impl Lexer {
         }
 
         let lexeme = self.lexeme();
-        let kind = match Keyword::from_str(&lexeme) {
-            Ok(kind) => TokenType::Keyword(kind),
+        let token_type = match Keyword::from_str(&lexeme) {
+            Ok(keyword) => TokenType::Keyword(keyword),
             Err(()) => TokenType::Identifier(lexeme.clone()),
         };
 
-        self.add_token(kind);
+        self.tokens.push(Token {
+            lexeme,
+            token_type,
+            line: self.line,
+        });
     }
 
     fn string(&mut self) -> Result<(), LexError> {
@@ -128,12 +132,26 @@ impl Lexer {
         while !self.is_at_end() && self.peek() != '"' {
             if self.peek() == '\n' {
                 return Err(LexError {
-                    kind: LexErrorKind::UnterminatedString,
+                    kind: LexErrorType::UnterminatedString,
                     line,
                 });
             }
             self.advance();
         }
+
+        if self.is_at_end() {
+            return Err(LexError {
+                kind: LexErrorType::UnterminatedString,
+                line,
+            });
+        }
+
+        self.advance();
+
+        let value: String = self.source[self.start + 1..self.current - 1]
+            .iter()
+            .collect();
+        self.add_token(TokenType::StringConstant(value));
         Ok(())
     }
 
@@ -144,10 +162,10 @@ impl Lexer {
 
         let lexeme = self.lexeme();
         match lexeme.parse::<u16>() {
-            Ok(n) => self.add_token(TokenType::IntegerConstant(n)),
-            Err(_) => {
+            Ok(n) if n <= 32767 => self.add_token(TokenType::IntegerConstant(n)),
+            _ => {
                 return Err(LexError {
-                    kind: LexErrorKind::InvalidIntConstant(lexeme),
+                    kind: LexErrorType::InvalidIntConstant(lexeme),
                     line: self.line,
                 });
             }

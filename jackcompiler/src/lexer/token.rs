@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 #[derive(Debug)]
 pub struct Token {
-    pub kind: TokenType,
+    pub token_type: TokenType,
     pub lexeme: String,
     pub line: usize,
 }
@@ -15,6 +15,7 @@ pub enum TokenType {
     IntegerConstant(u16),
     StringConstant(String),
     Identifier(String),
+    EOF,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -27,8 +28,8 @@ pub enum Keyword {
     Void,
     Static,
     Var,
-    DO,
-    IF,
+    Do,
+    If,
     Else,
     While,
     Let,
@@ -79,8 +80,8 @@ impl FromStr for Keyword {
             "void" => Self::Void,
             "static" => Self::Static,
             "var" => Self::Var,
-            "do" => Self::DO,
-            "if" => Self::IF,
+            "do" => Self::Do,
+            "if" => Self::If,
             "else" => Self::Else,
             "while" => Self::While,
             "return" => Self::Return,
@@ -137,8 +138,8 @@ impl fmt::Display for Keyword {
             Self::Void => "void",
             Self::Static => "static",
             Self::Var => "var",
-            Self::DO => "do",
-            Self::IF => "if",
+            Self::Do => "do",
+            Self::If => "if",
             Self::Else => "else",
             Self::While => "while",
             Self::Let => "let",
@@ -186,11 +187,12 @@ impl fmt::Display for Symbol {
 impl fmt::Display for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TokenType::Keyword(string) => write!(f, "Keyword({string})"),
-            TokenType::Symbol(string) => write!(f, "Symbol({string})"),
-            TokenType::IntegerConstant(int) => write!(f, "IntegerConstant({int})"),
-            TokenType::StringConstant(string) => write!(f, "StringConstant({string})"),
-            TokenType::Identifier(string) => write!(f, "Identifier({string})"),
+            Self::Keyword(string) => write!(f, "Keyword({string})"),
+            Self::Symbol(string) => write!(f, "Symbol({string})"),
+            Self::IntegerConstant(int) => write!(f, "IntegerConstant({int})"),
+            Self::StringConstant(string) => write!(f, "StringConstant({string})"),
+            Self::Identifier(string) => write!(f, "Identifier({string})"),
+            Self::EOF => write!(f, "EOF"),
         }
     }
 }
