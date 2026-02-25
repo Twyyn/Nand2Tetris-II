@@ -1,0 +1,1 @@
+C:\Users\bayba\Documents\GitHub\Nand2Tetris-II\jack_compiler\target\debug\jack_compiler.exe: C:\Users\bayba\Documents\GitHub\Nand2Tetris-II\jack_compiler\src\lexer\mod.rs C:\Users\bayba\Documents\GitHub\Nand2Tetris-II\jack_compiler\src\lib.rs C:\Users\bayba\Documents\GitHub\Nand2Tetris-II\jack_compiler\src\main.rs
