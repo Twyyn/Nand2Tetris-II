@@ -1,7 +1,9 @@
+mod error;
 mod keyword;
 mod kind;
 mod symbol;
 
+pub use error::TokenError;
 pub use keyword::Keyword;
 pub use kind::TokenKind;
 pub use symbol::Symbol;

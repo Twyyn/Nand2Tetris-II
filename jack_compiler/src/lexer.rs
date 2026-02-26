@@ -1,4 +1,5 @@
-use crate::token::{Keyword, Span, Symbol, Token, TokenKind};
+use crate::JACK_INT_MAX;
+use crate::token::{Keyword, Span, Symbol, Token, TokenError, TokenKind};
 use std::str::FromStr;
 
 pub struct Lexer<'src> {
@@ -25,17 +26,17 @@ impl<'src> Lexer<'src> {
     }
 
     #[must_use]
-    pub fn tokenize(mut self) -> Vec<Token<'src>> {
+    pub fn tokenize(mut self) -> Result<Vec<Token<'src>>, TokenError> {
         while !self.is_at_end() {
-            self.scan_token();
+            self.scan_token()?;
         }
         self.add_token(TokenKind::Eof, self.pos);
-        self.tokens
+        Ok(self.tokens)
     }
 
     // Scanner Dispatch
     #[rustfmt::skip]
-    fn scan_token(&mut self) {
+    fn scan_token(&mut self) -> Result<(), TokenError>{
         let start = self.pos;
         let c = self.advance();
 
@@ -47,11 +48,13 @@ impl<'src> Lexer<'src> {
                 self.advance_while(|b| b.is_ascii_whitespace());
             }
 
-            b'"'                             => self.scan_string(start),
-            b'0'..=b'9'                      => self.scan_integer(start),
+            b'"'                             => self.scan_string(start)?,
+            b'0'..=b'9'                      => self.scan_integer(start)?,
             b'a'..=b'z' | b'A'..=b'Z' | b'_' => self.scan_word(start),
-            _                                => self.scan_symbol(start),
+            _                                => self.scan_symbol(start)?,
         }
+
+        Ok(())
     }
 
     // --- Token Helper ---
@@ -135,27 +138,30 @@ impl<'src> Lexer<'src> {
     }
 
     // --- Scanner Helpers ---
-    fn scan_integer(&mut self, start: usize) {
+    fn scan_integer(&mut self, start: usize) -> Result<(), TokenError> {
         self.advance_while(|b| b.is_ascii_digit());
         let lexeme = self.slice(start, self.pos);
-        let value = match lexeme.parse::<u16>() {
-            Ok(value) if value <= 32767 => value,
-            Ok(_) => todo!(),  // TODO: Integer out of range error
-            Err(_) => todo!(), // TODO: Proper error
+        let value = match lexeme.parse::<u32>() {
+            Ok(n) if n <= JACK_INT_MAX => n as u16,
+            Ok(n) => return Err(TokenError::IntegerOutOfRange(n)),
+            Err(e) => return Err(TokenError::InvalidInteger(e.to_string())),
         };
+
         self.add_token(TokenKind::IntegerConstant(value), start);
+        Ok(())
     }
 
-    fn scan_string(&mut self, start: usize) {
+    fn scan_string(&mut self, start: usize) -> Result<(), TokenError> {
         let string_start = self.pos;
         self.advance_while(|b| b != b'"');
         let lexeme = self.slice(string_start, self.pos);
         if !self.is_at_end() && self.peek() == b'"' {
             self.advance();
         } else {
-            todo!("Unterminated String") // TODO: else emit an "unterminated string" error
+            return Err(TokenError::UnterminatedString);
         }
         self.add_token(TokenKind::StringConstant(lexeme), start);
+        Ok(())
     }
 
     fn scan_word(&mut self, start: usize) {
@@ -165,15 +171,17 @@ impl<'src> Lexer<'src> {
             Ok(keyword) => TokenKind::Keyword(keyword),
             Err(()) => TokenKind::Identifier(lexeme),
         };
+
         self.add_token(kind, start);
     }
 
-    fn scan_symbol(&mut self, start: usize) {
+    fn scan_symbol(&mut self, start: usize) -> Result<(), TokenError> {
         let c = self.source_as_bytes[self.pos - 1] as char;
         let kind = match Symbol::from_char(c) {
             Some(symbol) => TokenKind::Symbol(symbol),
-            None => todo!(), //TODO Add Proper Error Handling
+            None => return Err(TokenError::InvalidSymbol(c.to_string())),
         };
         self.add_token(kind, start);
+        Ok(())
     }
 }
