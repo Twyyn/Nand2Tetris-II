@@ -1,4 +1,5 @@
 use std::fmt;
+use std::str::FromStr;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Keyword {
@@ -25,32 +26,34 @@ pub enum Keyword {
     Return,
 }
 
-impl Keyword {
+impl FromStr for Keyword {
+    type Err = ();
+
     #[rustfmt::skip]
-    pub fn from_str(s: &str) -> Option<Self> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "class"       => Some(Self::Class),
-            "constructor" => Some(Self::Constructor),
-            "function"    => Some(Self::Function),
-            "method"      => Some(Self::Method),
-            "field"       => Some(Self::Field),
-            "static"      => Some(Self::Static),
-            "var"         => Some(Self::Var),
-            "int"         => Some(Self::Int),
-            "char"        => Some(Self::Char),
-            "boolean"     => Some(Self::Boolean),
-            "void"        => Some(Self::Void),
-            "true"        => Some(Self::True),
-            "false"       => Some(Self::False),
-            "null"        => Some(Self::Null),
-            "this"        => Some(Self::This),
-            "let"         => Some(Self::Let),
-            "do"          => Some(Self::Do),
-            "if"          => Some(Self::If),
-            "else"        => Some(Self::Else),
-            "while"       => Some(Self::While),
-            "return"      => Some(Self::Return),
-            _             => None,
+            "class"       => Ok(Self::Class),
+            "constructor" => Ok(Self::Constructor),
+            "function"    => Ok(Self::Function),
+            "method"      => Ok(Self::Method),
+            "field"       => Ok(Self::Field),
+            "static"      => Ok(Self::Static),
+            "var"         => Ok(Self::Var),
+            "int"         => Ok(Self::Int),
+            "char"        => Ok(Self::Char),
+            "boolean"     => Ok(Self::Boolean),
+            "void"        => Ok(Self::Void),
+            "true"        => Ok(Self::True),
+            "false"       => Ok(Self::False),
+            "null"        => Ok(Self::Null),
+            "this"        => Ok(Self::This),
+            "let"         => Ok(Self::Let),
+            "do"          => Ok(Self::Do),
+            "if"          => Ok(Self::If),
+            "else"        => Ok(Self::Else),
+            "while"       => Ok(Self::While),
+            "return"      => Ok(Self::Return),
+            _             => Err(()),
         }
     }
 }

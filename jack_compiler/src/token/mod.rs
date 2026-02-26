@@ -7,8 +7,8 @@ pub use kind::TokenKind;
 pub use symbol::Symbol;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Token {
-    pub kind: TokenKind,
+pub struct Token<'a> {
+    pub kind: TokenKind<'a>,
     pub span: Span,
 }
 
@@ -20,18 +20,32 @@ pub struct Span {
     pub column: u16,
 }
 
-impl Token {
-    pub fn new(kind: TokenKind, span: Span) -> Self {
+impl<'a> Token<'a> {
+    #[must_use]
+    pub fn new(kind: TokenKind<'a>, span: Span) -> Self {
         Self { kind, span }
     }
 
-    pub fn lexeme<'a>(&self, source: &'a str) -> &'a str {
+    #[must_use]
+    pub fn lexeme(&self, source: &'a str) -> &'a str {
         let start = self.span.offset as usize;
         &source[start..start + self.span.len as usize]
+    }
+
+    #[must_use]
+    pub fn as_xml(&self, source: &str) -> String {
+        let kind = &self.kind;
+        let lexeme = self.lexeme(source);
+        if lexeme.is_empty() {
+            format!("<{kind}></{kind}>")
+        } else {
+            format!("<{kind}> {lexeme} </{kind}>")
+        }
     }
 }
 
 impl Span {
+    #[must_use]
     pub fn new(offset: u32, len: u16, line: u32, column: u16) -> Self {
         Self {
             offset,

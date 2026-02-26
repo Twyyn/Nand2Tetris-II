@@ -25,14 +25,15 @@ pub enum Symbol {
 
 #[rustfmt::skip]
 impl Symbol {
+    #[must_use]
     pub fn from_char(c: char) -> Option<Self> {
         match c {
             '{' => Some(Self::LeftBrace),
             '}' => Some(Self::RightBrace),
             '(' => Some(Self::LeftParen),
             ')' => Some(Self::RightParen),
-            ']' => Some(Self::LeftBracket),
-            '[' => Some(Self::RightBracket),
+            '[' => Some(Self::LeftBracket),
+            ']' => Some(Self::RightBracket),
             '.' => Some(Self::Dot),
             ',' => Some(Self::Comma),
             ';' => Some(Self::Semicolon),
@@ -50,6 +51,7 @@ impl Symbol {
         }
     }
 
+    #[must_use]
     pub fn as_char(&self) -> char {
         match self {
             Self::LeftBrace    => '{',
