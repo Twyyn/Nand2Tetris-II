@@ -143,7 +143,6 @@ impl<'src> Lexer<'src> {
             Ok(_) => todo!(),  // TODO: Integer out of range error
             Err(_) => todo!(), // TODO: Proper error
         };
-
         self.add_token(TokenKind::IntegerConstant(value), start);
     }
 
@@ -151,13 +150,11 @@ impl<'src> Lexer<'src> {
         let string_start = self.pos;
         self.advance_while(|b| b != b'"');
         let lexeme = self.slice(string_start, self.pos);
-        
         if !self.is_at_end() && self.peek() == b'"' {
             self.advance();
         } else {
             todo!("Unterminated String") // TODO: else emit an "unterminated string" error
         }
-
         self.add_token(TokenKind::StringConstant(lexeme), start);
     }
 
