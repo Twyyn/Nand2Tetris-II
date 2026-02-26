@@ -9,6 +9,7 @@ pub enum TokenKind {
     IntegerConstant(u16),
     StringConstant(String),
     Identifier(Identifier),
+    Eof,
 }
 
 impl TokenKind {
