@@ -93,7 +93,7 @@ impl JackCompiler {
     pub fn tokenize(&self) {
         for file in &self.source_files {
             let lexer = Lexer::new(&file.contents).tokenize();
-            println!("{}\n{lexer:#?}\n{}", file.name, file.output_path.display());
+            println!("{}\n{lexer:?}\n{}", file.name, file.output_path.display());
         }
     }
 
