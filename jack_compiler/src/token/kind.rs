@@ -1,10 +1,9 @@
-use std::fmt;
-
 use super::{Keyword, Symbol};
+use std::fmt;
 
 pub type Identifier<'a> = &'a str;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TokenKind<'a> {
     Keyword(Keyword),
     Symbol(Symbol),

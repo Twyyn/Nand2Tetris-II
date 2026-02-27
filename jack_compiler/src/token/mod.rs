@@ -5,10 +5,11 @@ mod symbol;
 
 pub use error::TokenError;
 pub use keyword::Keyword;
-pub use kind::TokenKind;
+pub use kind::{Identifier, TokenKind};
+use std::fmt::{self};
 pub use symbol::Symbol;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Token<'a> {
     pub kind: TokenKind<'a>,
     pub span: Span,
@@ -22,27 +23,17 @@ pub struct Span {
     pub column: u16,
 }
 
-impl<'a> Token<'a> {
+impl<'src> Token<'src> {
     #[must_use]
-    pub fn new(kind: TokenKind<'a>, span: Span) -> Self {
+    pub fn new(kind: TokenKind<'src>, span: Span) -> Self {
         Self { kind, span }
     }
 
     #[must_use]
-    pub fn lexeme(&self, source: &'a str) -> &'a str {
+    pub fn lexeme(&self, source: &'src str) -> &'src str {
         let start = self.span.offset as usize;
-        &source[start..start + self.span.len as usize]
-    }
 
-    #[must_use]
-    pub fn as_xml(&self, source: &str) -> String {
-        let kind = &self.kind;
-        let lexeme = self.lexeme(source);
-        if lexeme.is_empty() {
-            format!("<{kind}></{kind}>")
-        } else {
-            format!("<{kind}> {lexeme} </{kind}>")
-        }
+        &source[start..start + self.span.len as usize]
     }
 }
 
@@ -55,5 +46,11 @@ impl Span {
             line,
             column,
         }
+    }
+}
+
+impl<'src> fmt::Display for Token<'src> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.kind)
     }
 }

@@ -25,7 +25,16 @@ impl<'src> Lexer<'src> {
         }
     }
 
-    #[must_use]
+    /// Convert the source text into a sequence of lexical tokens.
+    ///
+    /// The lexer scans the input byte‑by‑byte and emits `Token` instances.
+    ///
+    /// # Errors
+    ///
+    /// A `TokenError` is returned when the scanner encounters invalid input,
+    /// such as an invalid symbol, unterminated string literal, integer that
+    /// cannot be parsed or is out of the allowed range, or any other
+    /// malformed token.
     pub fn tokenize(mut self) -> Result<Vec<Token<'src>>, TokenError> {
         while !self.is_at_end() {
             self.scan_token()?;
@@ -138,6 +147,7 @@ impl<'src> Lexer<'src> {
     }
 
     // --- Scanner Helpers ---
+    #[allow(clippy::cast_possible_truncation)]
     fn scan_integer(&mut self, start: usize) -> Result<(), TokenError> {
         self.advance_while(|b| b.is_ascii_digit());
         let lexeme = self.slice(start, self.pos);
@@ -160,6 +170,7 @@ impl<'src> Lexer<'src> {
         } else {
             return Err(TokenError::UnterminatedString);
         }
+
         self.add_token(TokenKind::StringConstant(lexeme), start);
         Ok(())
     }
@@ -181,6 +192,7 @@ impl<'src> Lexer<'src> {
             Some(symbol) => TokenKind::Symbol(symbol),
             None => return Err(TokenError::InvalidSymbol(c.to_string())),
         };
+
         self.add_token(kind, start);
         Ok(())
     }

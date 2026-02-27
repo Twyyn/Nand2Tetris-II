@@ -84,6 +84,7 @@ impl fmt::Display for Keyword {
             Self::While       => "while",
             Self::Return      => "return"
         };
+
         write!(f, "{s}")
     }
 }

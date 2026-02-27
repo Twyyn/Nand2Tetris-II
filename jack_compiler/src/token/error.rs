@@ -1,6 +1,6 @@
 use crate::JACK_INT_MAX;
 
-use core::fmt;
+use std::fmt;
 
 #[derive(Debug)]
 pub enum TokenError {
