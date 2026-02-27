@@ -49,7 +49,7 @@ impl Span {
     }
 }
 
-impl<'src> fmt::Display for Token<'src> {
+impl fmt::Display for Token<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.kind)
     }

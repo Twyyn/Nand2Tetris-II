@@ -14,6 +14,8 @@ impl<'t> Parser<'t> {
         Self { tokens, pos: 0 }
     }
 
+    // --- Parse Helpers ---
+
     // --- Token Navigation Helpers ---
     fn has_more_tokens(&self) -> bool {
         self.pos < self.tokens.len()
@@ -33,7 +35,7 @@ impl<'t> Parser<'t> {
         }
     }
 
-    fn expect(&mut self, kind: TokenKind) -> Result<Token, ParseError> {
+    fn expect(&mut self, kind: TokenKind) -> Result<Token<'_>, ParseError<'_>> {
         match self.advance() {
             Some(token) if token.kind == kind => Ok(token),
             Some(token) => Err(ParseError::UnexpectedToken(token)),
