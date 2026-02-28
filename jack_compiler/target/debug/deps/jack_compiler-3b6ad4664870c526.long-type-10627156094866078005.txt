@@ -1,1 +1,0 @@
-for<'a> fn(&'a str) -> std::result::Result<token::keyword::Keyword, <token::keyword::Keyword as std::str::FromStr>::Err> {<token::keyword::Keyword as std::str::FromStr>::from_str}
